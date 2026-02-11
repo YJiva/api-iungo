@@ -1,0 +1,29 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+    jsp:
+      init-parameters:
+        development: true # JSP 热部署
+  tomcat:
+    uri-encoding: UTF-8 # 解决中文乱码
+
+spring:
+  # JSP-Model2 核心：视图解析器
+  mvc:
+    view:
+      prefix: /WEB-INF/jsp/
+      suffix: .jsp
+  # 数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/iungoDB?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root # 你的 MySQL 账号
+    password: 123456 # 你的 MySQL 密码
+
+# MyBatis 配置
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true # 下划线转驼峰（如 create_time → createTime）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 打印 SQL 日志（调试用）
+  type-aliases-package: com.example.apiiungo.entity # 实体类别名包
