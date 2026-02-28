@@ -6,7 +6,7 @@ import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
-// 原生 MyBatis 的 @Mapper 注解
+// 原生 MyBatis 的 @Mapper 注解''
 @Mapper
 public interface UserMapper {
 

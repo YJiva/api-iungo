@@ -10,8 +10,10 @@ import java.util.List;
 
 @CrossOrigin
 @RestController
-@RequestMapping("/api/test")
-public class TestUserController {
+
+
+@RequestMapping("/api/home")
+public class UserController {
 
     @Resource
     private UserService userService;
