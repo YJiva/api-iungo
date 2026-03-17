@@ -9,6 +9,10 @@ server:
     uri-encoding: UTF-8 # 解决中文乱码
 
 spring:
+  # 额外配置文件（包含敏感信息，如邮箱账号）
+  config:
+    import: classpath:env-mail.yml
+
   # JSP-Model2 核心：视图解析器
   mvc:
     view:
@@ -20,6 +24,21 @@ spring:
     url: jdbc:mysql://localhost:3306/iungoDB?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
     username: root # 你的 MySQL 账号
     password: 123456 # 你的 MySQL 密码
+
+  # 邮件配置（使用 QQ 邮箱，用户名/密码从 env-mail.yml 读取）
+  mail:
+    host: smtp.qq.com
+    username: ${mail.username}
+    password: ${mail.password}
+    port: 587
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
 # MyBatis 配置
 mybatis:

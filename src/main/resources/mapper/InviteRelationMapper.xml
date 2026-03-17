@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.apiiungo.mapper.InviteRelationMapper">
+
+    <insert id="insert" parameterType="com.apiiungo.entity.InviteRelation" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO invite_relation (inviter_id, invitee_id, rewarded, create_time)
+        VALUES (#{inviterId}, #{inviteeId}, #{rewarded}, #{createTime})
+    </insert>
+
+    <!-- 所有邀请关系 + 双方用户信息 -->
+    <select id="selectAllWithUsers" resultType="java.util.Map">
+        SELECT
+            r.id,
+            r.inviter_id,
+            ui.username  AS inviter_username,
+            ui.nickname  AS inviter_nickname,
+            ui.avatar    AS inviter_avatar,
+            r.invitee_id,
+            ue.username  AS invitee_username,
+            ue.nickname  AS invitee_nickname,
+            ue.avatar    AS invitee_avatar,
+            r.rewarded,
+            r.create_time
+        FROM invite_relation r
+                 JOIN `user` ui ON ui.id = r.inviter_id
+                 JOIN `user` ue ON ue.id = r.invitee_id
+        ORDER BY r.inviter_id, r.id
+    </select>
+
+    <!-- 与某个用户直接相关的邀请关系（作为邀请人或被邀请人） -->
+    <select id="selectCloseWithUsers" parameterType="long" resultType="java.util.Map">
+        SELECT
+            r.id,
+            r.inviter_id,
+            ui.username  AS inviter_username,
+            ui.nickname  AS inviter_nickname,
+            ui.avatar    AS inviter_avatar,
+            r.invitee_id,
+            ue.username  AS invitee_username,
+            ue.nickname  AS invitee_nickname,
+            ue.avatar    AS invitee_avatar,
+            r.rewarded,
+            r.create_time
+        FROM invite_relation r
+                 JOIN `user` ui ON ui.id = r.inviter_id
+                 JOIN `user` ue ON ue.id = r.invitee_id
+        WHERE r.inviter_id = #{userId}
+           OR r.invitee_id = #{userId}
+        ORDER BY r.inviter_id, r.id
+    </select>
+
+</mapper>
+

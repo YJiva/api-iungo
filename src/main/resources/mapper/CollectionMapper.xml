@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.apiiungo.mapper.CollectionMapper">
+
+    <resultMap id="CollectionResult" type="com.apiiungo.entity.Collection">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="targetType" column="target_type"/>
+        <result property="targetId" column="target_id"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.apiiungo.entity.Collection" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO collection (user_id, target_type, target_id, create_time)
+        VALUES (#{userId}, #{targetType}, #{targetId}, #{createTime})
+    </insert>
+
+    <delete id="delete">
+        DELETE
+        FROM collection
+        WHERE user_id = #{userId}
+          AND target_type = #{targetType}
+          AND target_id = #{targetId}
+    </delete>
+
+    <select id="exists" resultType="int">
+        SELECT COUNT(1)
+        FROM collection
+        WHERE user_id = #{userId}
+          AND target_type = #{targetType}
+          AND target_id = #{targetId}
+    </select>
+
+    <select id="selectByUser" parameterType="long" resultMap="CollectionResult">
+        SELECT *
+        FROM collection
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>
+

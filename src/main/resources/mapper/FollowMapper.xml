@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.apiiungo.mapper.FollowMapper">
+
+    <resultMap id="UserResult" type="com.apiiungo.entity.User">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="email" column="email"/>
+        <result property="nickname" column="nickname"/>
+        <result property="avatar" column="avatar"/>
+        <result property="bio" column="bio"/>
+        <result property="roleId" column="role_id"/>
+        <result property="inviteCode" column="invite_code"/>
+        <result property="inviterId" column="inviter_id"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <insert id="insertFollow" parameterType="com.apiiungo.entity.Follow" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO follow (user_id, target_id, create_time)
+        VALUES (#{userId}, #{targetId}, #{createTime})
+    </insert>
+
+    <delete id="deleteFollow">
+        DELETE FROM follow
+        WHERE user_id = #{userId}
+          AND target_id = #{targetId}
+    </delete>
+
+    <select id="exists" resultType="int">
+        SELECT COUNT(1)
+        FROM follow
+        WHERE user_id = #{userId}
+          AND target_id = #{targetId}
+    </select>
+
+    <!-- 我关注的人 -->
+    <select id="selectFollowing" resultMap="UserResult">
+        SELECT u.*
+        FROM follow f
+                 JOIN user u ON f.target_id = u.id
+        WHERE f.user_id = #{userId}
+        ORDER BY f.create_time DESC
+    </select>
+
+    <!-- 关注我的人 -->
+    <select id="selectFollowers" resultMap="UserResult">
+        SELECT u.*
+        FROM follow f
+                 JOIN user u ON f.user_id = u.id
+        WHERE f.target_id = #{userId}
+        ORDER BY f.create_time DESC
+    </select>
+
+</mapper>
+

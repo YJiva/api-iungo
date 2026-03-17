@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>APi-iungo API 文档</title>
+    <style>
+      :root {
+        /* 小清新：淡粉背景 + 深色字体 + 绿色代码块 */
+        --bg: #fff1f5; /* 淡粉 */
+        --card: rgba(255, 255, 255, 0.9);
+        --text: rgba(17, 24, 39, 0.92); /* 深 */
+        --muted: rgba(17, 24, 39, 0.6);
+        --border: rgba(17, 24, 39, 0.12);
+        --link: #0ea5e9;
+        --code-bg: rgba(34, 197, 94, 0.12); /* 绿色一点 */
+        --code-border: rgba(34, 197, 94, 0.22);
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+          "Liberation Sans", sans-serif;
+      }
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 28px 18px 64px;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(10px);
+        position: sticky;
+        top: 12px;
+        z-index: 10;
+      }
+      .topbar-title {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .topbar-title strong {
+        font-size: 14px;
+        letter-spacing: 0.2px;
+      }
+      .topbar-title span {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .btn {
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+      .btn:hover {
+        background: rgba(255, 255, 255, 0.92);
+      }
+      .card {
+        margin-top: 16px;
+        padding: 18px 18px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--card);
+        backdrop-filter: blur(10px);
+      }
+      a {
+        color: var(--link);
+      }
+      pre,
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      }
+      pre {
+        background: var(--code-bg);
+        border: 1px solid var(--code-border);
+        padding: 12px 12px;
+        border-radius: 12px;
+        overflow: auto;
+      }
+      code {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 0 6px;
+        border-radius: 8px;
+      }
+      pre code {
+        background: transparent;
+        border: none;
+        padding: 0;
+      }
+      h1,
+      h2,
+      h3 {
+        margin-top: 18px;
+      }
+      h1 {
+        font-size: 22px;
+      }
+      h2 {
+        font-size: 18px;
+      }
+      h3 {
+        font-size: 15px;
+        color: rgba(255, 255, 255, 0.88);
+      }
+      hr {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 16px 0;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .error {
+        color: #fecaca;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="topbar">
+        <div class="topbar-title">
+          <strong>APi-iungo API 文档</strong>
+          <span>渲染自 <code>/api.md</code></span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn" id="btn-reload">刷新</button>
+          <a class="btn" href="/api.md" target="_blank" rel="noreferrer">查看 Markdown</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div id="content" class="muted">加载中…</div>
+      </div>
+    </div>
+
+    <script src="/marked.min.js"></script>
+    <script>
+      // 轻量 Markdown 渲染（离线可用，不依赖外部 CDN）
+      // 支持：标题(#/##/###)、分割线(---)、代码块(```)、无序列表(- )、段落、行内代码(`code`)
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function renderInline(text) {
+        // 行内代码
+        const escaped = escapeHtml(text);
+        return escaped.replace(/`([^`]+?)`/g, "<code>$1</code>");
+      }
+
+      function renderMarkdown(md) {
+        const lines = String(md).replace(/\r\n/g, "\n").split("\n");
+        let html = "";
+        let inCode = false;
+        let codeLang = "";
+        let codeBuf = [];
+        let inList = false;
+
+        function flushParagraph(buf) {
+          const t = buf.join(" ").trim();
+          if (!t) return "";
+          return "<p>" + renderInline(t) + "</p>\n";
+        }
+
+        let paraBuf = [];
+
+        function closeList() {
+          if (inList) {
+            html += "</ul>\n";
+            inList = false;
+          }
+        }
+
+        function closePara() {
+          if (paraBuf.length) {
+            html += flushParagraph(paraBuf);
+            paraBuf = [];
+          }
+        }
+
+        for (const rawLine of lines) {
+          const line = rawLine;
+
+          // code fence
+          const fence = line.match(/^```(\w+)?\s*$/);
+          if (fence) {
+            if (!inCode) {
+              closePara();
+              closeList();
+              inCode = true;
+              codeLang = fence[1] || "";
+              codeBuf = [];
+            } else {
+              const codeText = codeBuf.join("\n");
+              html +=
+                '<pre><code' +
+                (codeLang ? ' class="language-' + escapeHtml(codeLang) + '"' : "") +
+                ">" +
+                escapeHtml(codeText) +
+                "</code></pre>\n";
+              inCode = false;
+              codeLang = "";
+              codeBuf = [];
+            }
+            continue;
+          }
+
+          if (inCode) {
+            codeBuf.push(line);
+            continue;
+          }
+
+          // hr
+          if (/^\s*---+\s*$/.test(line)) {
+            closePara();
+            closeList();
+            html += "<hr/>\n";
+            continue;
+          }
+
+          // heading
+          const h = line.match(/^(#{1,3})\s+(.*)\s*$/);
+          if (h) {
+            closePara();
+            closeList();
+            const level = h[1].length;
+            html += "<h" + level + ">" + renderInline(h[2]) + "</h" + level + ">\n";
+            continue;
+          }
+
+          // list item
+          const li = line.match(/^\s*-\s+(.*)\s*$/);
+          if (li) {
+            closePara();
+            if (!inList) {
+              html += "<ul>\n";
+              inList = true;
+            }
+            html += "<li>" + renderInline(li[1]) + "</li>\n";
+            continue;
+          } else {
+            closeList();
+          }
+
+          // blank line => paragraph break
+          if (/^\s*$/.test(line)) {
+            closePara();
+            continue;
+          }
+
+          // default paragraph
+          paraBuf.push(line.trim());
+        }
+
+        // flush tail
+        if (inCode) {
+          // 未闭合的代码块：按纯文本输出
+          html += "<pre><code>" + escapeHtml(codeBuf.join("\n")) + "</code></pre>\n";
+        }
+        closeList();
+        closePara();
+        return html;
+      }
+
+      async function loadMd() {
+        const el = document.getElementById("content");
+        el.className = "muted";
+        el.textContent = "加载中…";
+        try {
+          const resp = await fetch("/api.md", { cache: "no-store" });
+          if (!resp.ok) throw new Error("HTTP " + resp.status);
+          const md = await resp.text();
+          el.className = "";
+          // 优先使用本地 marked（若未加载成功，则降级使用轻量渲染器）
+          if (window.marked && typeof window.marked.parse === "function") {
+            el.innerHTML = window.marked.parse(md);
+          } else {
+            el.innerHTML = renderMarkdown(md);
+          }
+        } catch (e) {
+          el.className = "error";
+          el.textContent = "加载失败：" + (e && e.message ? e.message : e);
+        }
+      }
+      document.getElementById("btn-reload").addEventListener("click", loadMd);
+      loadMd();
+    </script>
+  </body>
+</html>
+

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.apiiungo.mapper.UserMapper">
+    <!-- 基础字段（与当前 user 表结构一致） -->
+    <sql id="Base_Column_List">
+        id, username, gender, password, email, nickname, avatar, bio, role_id, status, create_time, update_time
+    </sql>
+
+    <!-- 根据ID查用户 -->
+    <select id="selectById" resultType="com.apiiungo.entity.User">
+        SELECT <include refid="Base_Column_List"/> FROM `user` WHERE id = #{id}
+    </select>
+
+    <!-- 账号查用户 -->
+    <select id="selectByUsername" resultType="com.apiiungo.entity.User">
+        SELECT <include refid="Base_Column_List"/> FROM `user` WHERE username = #{username}
+    </select>
+
+    <!-- 邮箱查用户 -->
+    <select id="selectByEmail" resultType="com.apiiungo.entity.User">
+        SELECT <include refid="Base_Column_List"/> FROM `user` WHERE email = #{email}
+    </select>
+
+    <!-- 邀请码查邀请人 -->
+    <select id="selectByInviteCode" resultType="com.apiiungo.entity.User">
+        SELECT <include refid="Base_Column_List"/> FROM `user` WHERE invite_code = #{inviteCode} AND status = 1
+    </select>
+
+    <!-- 递归查询邀请树（基于 invite_relation 关系表） -->
+    <select id="selectInviteTree" resultType="java.util.Map">
+        WITH RECURSIVE invite_tree AS (
+            SELECT r.invitee_id AS id, 1 AS level
+            FROM invite_relation r
+            WHERE r.inviter_id = #{parentId}
+            UNION ALL
+            SELECT r2.invitee_id AS id, it.level + 1
+            FROM invite_relation r2
+                     JOIN invite_tree it ON r2.inviter_id = it.id
+        )
+        SELECT u.id, u.username, u.nickname, it.level
+        FROM invite_tree it
+                 JOIN `user` u ON u.id = it.id
+        ORDER BY it.level, u.id;
+    </select>
+
+    <!-- 新增用户 -->
+    <insert id="insertUser" parameterType="com.apiiungo.entity.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `user`
+        (username, gender, password, email, nickname, avatar, bio, role_id, status, create_time, update_time)
+        VALUES
+        (#{username}, #{gender}, #{password}, #{email}, #{nickname}, #{avatar}, #{bio}, #{roleId}, #{status},
+         #{createTime}, #{updateTime})
+    </insert>
+
+    <!-- 更新用户信息（资料编辑不强制修改密码，password 为空时不更新该字段） -->
+    <update id="updateUser" parameterType="com.apiiungo.entity.User">
+        UPDATE `user`
+        <set>
+            username    = #{username},
+            gender      = #{gender},
+            <!-- 只有在传入了非空密码时才更新密码字段，避免将 NOT NULL 的 password 置为 NULL -->
+            <if test="password != null and password != ''">
+                password = #{password},
+            </if>
+            email       = #{email},
+            nickname    = #{nickname},
+            avatar      = #{avatar},
+            bio         = #{bio},
+            role_id     = #{roleId},
+            status      = #{status},
+            update_time = #{updateTime}
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 查询所有用户（用于首页测试用户名展示） -->
+    <select id="selectAll" resultType="com.apiiungo.entity.User">
+        SELECT <include refid="Base_Column_List"/> FROM `user`
+    </select>
+</mapper>

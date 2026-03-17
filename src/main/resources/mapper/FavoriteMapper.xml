@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.apiiungo.mapper.FavoriteMapper">
+
+    <insert id="insertFavorite" parameterType="com.apiiungo.entity.Favorite" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO favorite (post_id, user_id, create_time)
+        VALUES (#{postId}, #{userId}, #{createTime})
+    </insert>
+
+    <delete id="deleteFavorite">
+        DELETE FROM favorite WHERE post_id = #{postId} AND user_id = #{userId}
+    </delete>
+
+    <select id="countByPost" resultType="int">
+        SELECT COUNT(*) FROM favorite WHERE post_id = #{postId}
+    </select>
+
+    <select id="exists" resultType="int">
+        SELECT COUNT(*) FROM favorite WHERE post_id = #{postId} AND user_id = #{userId}
+    </select>
+
+</mapper>

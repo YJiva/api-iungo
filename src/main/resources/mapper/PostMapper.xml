@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.apiiungo.mapper.PostMapper">
+
+    <insert id="insertPost" parameterType="com.apiiungo.entity.Post" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO post (author_id, title, content, tags, likes, favorites, comments, status, create_time, update_time)
+        VALUES (#{authorId}, #{title}, #{content}, #{tags}, #{likes, jdbcType=INTEGER}, #{favorites, jdbcType=INTEGER}, #{comments, jdbcType=INTEGER}, #{status, jdbcType=INTEGER}, #{createTime}, #{updateTime})
+    </insert>
+
+    <select id="selectById" parameterType="long" resultType="com.apiiungo.entity.Post">
+        SELECT id, author_id AS authorId, title, content, tags, likes, favorites, comments, status, create_time AS createTime, update_time AS updateTime
+        FROM post WHERE id = #{id} AND status = 0
+    </select>
+
+    <select id="selectRecent" resultType="com.apiiungo.entity.Post">
+        SELECT id, author_id AS authorId, title, content, tags, likes, favorites, comments, status, create_time AS createTime, update_time AS updateTime
+        FROM post WHERE status = 0 ORDER BY create_time DESC LIMIT #{offset}, #{limit}
+    </select>
+
+    <update id="updatePost" parameterType="com.apiiungo.entity.Post">
+        UPDATE post
+        SET title = #{title}, content = #{content}, tags = #{tags}, update_time = #{updateTime}
+        WHERE id = #{id}
+    </update>
+
+    <update id="incLikes">
+        UPDATE post SET likes = IFNULL(likes,0) + 1 WHERE id = #{id}
+    </update>
+
+    <update id="incFavorites">
+        UPDATE post SET favorites = IFNULL(favorites,0) + 1 WHERE id = #{id}
+    </update>
+
+</mapper>

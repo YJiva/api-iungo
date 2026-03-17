@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.apiiungo.mapper.InviteCodeMapper">
+
+    <resultMap id="InviteCodeResult" type="com.apiiungo.entity.InviteCode">
+        <id property="id" column="id"/>
+        <result property="code" column="code"/>
+        <result property="userId" column="userid"/>
+        <result property="expireTime" column="expire_time"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <select id="selectByCode" parameterType="string" resultMap="InviteCodeResult">
+        SELECT id, code, userid, expire_time, create_time
+        FROM invite_code
+        WHERE code = #{code}
+        LIMIT 1
+    </select>
+
+    <select id="selectByUserId" parameterType="long" resultMap="InviteCodeResult">
+        SELECT id, code, userid, expire_time, create_time
+        FROM invite_code
+        WHERE userid = #{userId}
+        LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.apiiungo.entity.InviteCode" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO invite_code (code, userid, expire_time, create_time)
+        VALUES (#{code}, #{userId}, #{expireTime}, #{createTime})
+    </insert>
+
+</mapper>
+
