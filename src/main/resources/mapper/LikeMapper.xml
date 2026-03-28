@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.apiiungo.mapper.LikeMapper">
+
+    <insert id="insertLike" parameterType="com.apiiungo.entity.Like" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `like` (user_id, target_type, target_id, action, create_time)
+        VALUES (#{userId}, #{targetType}, #{targetId}, #{action}, #{createTime})
+    </insert>
+
+    <delete id="deleteLike">
+        DELETE FROM `like`
+        WHERE user_id = #{userId}
+          AND target_type = #{targetType}
+          AND target_id = #{targetId}
+          AND action = #{action}
+    </delete>
+
+    <select id="exists" resultType="int">
+        SELECT COUNT(*)
+        FROM `like`
+        WHERE user_id = #{userId}
+          AND target_type = #{targetType}
+          AND target_id = #{targetId}
+          AND action = #{action}
+    </select>
+
+    <select id="countByTarget" resultType="int">
+        SELECT COUNT(*)
+        FROM `like`
+        WHERE target_type = #{targetType}
+          AND target_id = #{targetId}
+          AND action = #{action}
+    </select>
+
+    <delete id="deleteByTarget">
+        DELETE FROM `like`
+        WHERE target_type = #{targetType}
+          AND target_id = #{targetId}
+          AND action = #{action}
+    </delete>
+
+</mapper>

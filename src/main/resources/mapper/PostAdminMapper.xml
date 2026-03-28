@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.apiiungo.mapper.PostAdminMapper">
+
+    <select id="selectByCategory" resultType="com.apiiungo.entity.PostAdmin">
+        SELECT id,
+               category_id AS categoryId,
+               user_id AS userId,
+               role,
+               status,
+               create_time AS createTime,
+               update_time AS updateTime
+        FROM post_admin
+        WHERE category_id = #{categoryId}
+          AND status = 1
+        ORDER BY role DESC, id ASC
+    </select>
+
+    <select id="existsActive" resultType="int">
+        SELECT COUNT(1)
+        FROM post_admin
+        WHERE category_id = #{categoryId}
+          AND user_id = #{userId}
+          AND status = 1
+    </select>
+
+    <insert id="insert" parameterType="com.apiiungo.entity.PostAdmin" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO post_admin (category_id, user_id, role, status, create_time, update_time)
+        VALUES (#{categoryId}, #{userId}, #{role}, #{status}, #{createTime}, #{updateTime})
+    </insert>
+
+    <update id="disable">
+        UPDATE post_admin
+        SET status = 0,
+            update_time = NOW()
+        WHERE category_id = #{categoryId}
+          AND user_id = #{userId}
+          AND status = 1
+    </update>
+
+</mapper>
