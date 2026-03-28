@@ -9,5 +9,12 @@ import java.util.List;
 @Mapper
 public interface CommentMapper {
     int insertComment(Comment comment);
-    List<Comment> selectByPost(@Param("postId") Long postId);
+
+    List<Comment> selectByTarget(@Param("targetType") Long targetType, @Param("targetId") Long targetId);
+
+    Comment selectById(@Param("id") Long id);
+
+    int updateLikeCount(@Param("id") Long id, @Param("delta") int delta);
+
+    int deleteById(@Param("id") Long id);
 }

@@ -12,7 +12,7 @@ public class Collection {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Long userId;
-    private String targetType;
+    private Long targetType;
     private Long targetId;
     private LocalDateTime createTime;
 
@@ -32,11 +32,11 @@ public class Collection {
         this.userId = userId;
     }
 
-    public String getTargetType() {
+    public Long getTargetType() {
         return targetType;
     }
 
-    public void setTargetType(String targetType) {
+    public void setTargetType(Long targetType) {
         this.targetType = targetType;
     }
 

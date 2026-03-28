@@ -65,13 +65,19 @@ public class BlogServiceImpl implements BlogService {
         if (scope == 0 || scope == 1) {
             List<Blog> own = blogMapper.selectByUser(userId);
             for (Blog b : own) {
-                resultMap.put(b.getId(), b);
+                // status=1 才允许前台展示（软删除/隐藏不展示）
+                if (b != null && b.getStatus() != null && b.getStatus() == 1) {
+                    resultMap.put(b.getId(), b);
+                }
             }
         }
         if (scope == 1 || scope == 2) {
             List<Blog> pub = blogMapper.selectPublic();
             for (Blog b : pub) {
-                resultMap.putIfAbsent(b.getId(), b);
+                // selectPublic 已经限定 status=1
+                if (b != null && b.getId() != null) {
+                    resultMap.putIfAbsent(b.getId(), b);
+                }
             }
         }
         return new ArrayList<>(resultMap.values());
@@ -91,6 +97,10 @@ public class BlogServiceImpl implements BlogService {
         if (blog == null) {
             return null;
         }
+        // status=0 表示已软删除/不在前台展示
+        if (blog.getStatus() == null || blog.getStatus() != 1) {
+            return null;
+        }
         Long currentRead = blog.getRead();
         if (currentRead == null) {
             currentRead = 0L;
@@ -99,5 +109,27 @@ public class BlogServiceImpl implements BlogService {
         // 简单直接更新整行（包含最新的阅读数）
         blogMapper.updateBlog(blog);
         return blog;
+    }
+
+    @Override
+    public List<Blog> listPublicByUser(Long userId, int page, int pageSize) {
+        List<Blog> all = blogMapper.selectPublicByUser(userId);
+        if (all == null || all.isEmpty()) {
+            return new ArrayList<>();
+        }
+        int safePage = Math.max(page, 1);
+        int safeSize = Math.max(pageSize, 1);
+        int from = (safePage - 1) * safeSize;
+        if (from >= all.size()) {
+            return new ArrayList<>();
+        }
+        int to = Math.min(from + safeSize, all.size());
+        return all.subList(from, to);
+    }
+
+    @Override
+    public long countPublicByUser(Long userId) {
+        List<Blog> all = blogMapper.selectPublicByUser(userId);
+        return all == null ? 0 : all.size();
     }
 }

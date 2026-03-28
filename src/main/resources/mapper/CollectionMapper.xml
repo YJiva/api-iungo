@@ -31,6 +31,13 @@
           AND target_id = #{targetId}
     </select>
 
+    <select id="countByTarget" resultType="int">
+        SELECT COUNT(1)
+        FROM collection
+        WHERE target_type = #{targetType}
+          AND target_id = #{targetId}
+    </select>
+
     <select id="selectByUser" parameterType="long" resultMap="CollectionResult">
         SELECT *
         FROM collection

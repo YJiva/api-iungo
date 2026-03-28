@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,11 @@ public class AdminRoleController {
     }
 
     @GetMapping("/list")
-    public Map<String, Object> list(HttpServletRequest request) {
+    public Map<String, Object> list(@RequestParam(defaultValue = "1") Integer page,
+                                    @RequestParam(defaultValue = "5") Integer size,
+                                    @RequestParam(required = false) String keyword,
+                                    @RequestParam(required = false) Long id,
+                                    HttpServletRequest request) {
         Map<String, Object> result = new HashMap<>();
         User admin = getCurrentUser(request);
         if (!isAdmin(admin)) {
@@ -54,9 +59,38 @@ public class AdminRoleController {
             result.put("msg", "无权限");
             return result;
         }
-        List<Role> roles = roleMapper.selectList(null);
+        List<Role> all = roleMapper.selectList(null);
+        List<Role> filtered = new ArrayList<>();
+        String kw = keyword == null ? null : keyword.trim().toLowerCase();
+        for (Role r : all) {
+            if (r == null) continue;
+            if (id != null) {
+                if (r.getId() != null && r.getId().equals(id)) {
+                    filtered.add(r);
+                }
+                continue;
+            }
+            if (kw == null || kw.isEmpty()) {
+                filtered.add(r);
+                continue;
+            }
+            String hay = (String.valueOf(r.getId()) + " "
+                    + String.valueOf(r.getName()) + " "
+                    + String.valueOf(r.getDescription())).toLowerCase();
+            if (hay.contains(kw)) {
+                filtered.add(r);
+            }
+        }
+
+        int safePage = page == null || page < 1 ? 1 : page;
+        int safeSize = size == null || size < 1 ? 5 : Math.min(size, 100);
+        int total = filtered.size();
+        int from = Math.min((safePage - 1) * safeSize, total);
+        int to = Math.min(from + safeSize, total);
+        List<Role> roles = filtered.subList(from, to);
         result.put("code", 200);
         result.put("data", roles);
+        result.put("total", total);
         return result;
     }
 

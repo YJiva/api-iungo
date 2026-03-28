@@ -9,7 +9,6 @@ import com.apiiungo.mapper.PostMapper;
 import com.apiiungo.mapper.CommentMapper;
 import com.apiiungo.mapper.FavoriteMapper;
 import com.apiiungo.utils.Md5Util;
-import com.apiiungo.utils.RandomUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -78,14 +77,16 @@ public class TestDataInitializer implements CommandLineRunner {
 
                 // 添加评论和收藏
                 Comment c = new Comment();
-                c.setPostId(p.getId());
+                c.setTargetType(2L); // target: post
+                c.setTargetId(p.getId());
                 c.setUserId(testUser.getId());
                 c.setContent("Nice post!");
                 c.setCreateTime(LocalDateTime.now());
                 commentMapper.insertComment(c);
 
                 Favorite fav = new Favorite();
-                fav.setPostId(p.getId());
+                fav.setTargetType(2L); // target: post
+                fav.setTargetId(p.getId());
                 fav.setUserId(testUser.getId());
                 fav.setCreateTime(LocalDateTime.now());
                 favoriteMapper.insertFavorite(fav);

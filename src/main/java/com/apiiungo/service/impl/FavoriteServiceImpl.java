@@ -14,28 +14,28 @@ public class FavoriteServiceImpl implements FavoriteService {
     private FavoriteMapper favoriteMapper;
 
     @Override
-    public boolean toggleFavorite(Long postId, Long userId) {
-        int exists = favoriteMapper.exists(postId, userId);
+    public boolean toggleFavorite(Long userId, Long targetType, Long targetId) {
+        int exists = favoriteMapper.exists(userId, targetType, targetId);
         if (exists > 0) {
-            favoriteMapper.deleteFavorite(postId, userId);
+            favoriteMapper.deleteFavorite(userId, targetType, targetId);
             return false;
-        } else {
-            com.apiiungo.entity.Favorite fav = new com.apiiungo.entity.Favorite();
-            fav.setPostId(postId);
-            fav.setUserId(userId);
-            fav.setCreateTime(LocalDateTime.now());
-            favoriteMapper.insertFavorite(fav);
-            return true;
         }
+        com.apiiungo.entity.Favorite fav = new com.apiiungo.entity.Favorite();
+        fav.setUserId(userId);
+        fav.setTargetType(targetType);
+        fav.setTargetId(targetId);
+        fav.setCreateTime(LocalDateTime.now());
+        favoriteMapper.insertFavorite(fav);
+        return true;
     }
 
     @Override
-    public boolean isFavorited(Long postId, Long userId) {
-        return favoriteMapper.exists(postId, userId) > 0;
+    public boolean isFavorited(Long userId, Long targetType, Long targetId) {
+        return favoriteMapper.exists(userId, targetType, targetId) > 0;
     }
 
     @Override
-    public int countFavorites(Long postId) {
-        return favoriteMapper.countByPost(postId);
+    public int countFavorites(Long targetType, Long targetId) {
+        return favoriteMapper.countByTarget(targetType, targetId);
     }
 }

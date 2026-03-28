@@ -18,12 +18,33 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public Comment addComment(Comment comment) {
         comment.setCreateTime(LocalDateTime.now());
+        if (comment.getLikeCount() == null) {
+            comment.setLikeCount(0);
+        }
         commentMapper.insertComment(comment);
         return comment;
     }
 
     @Override
-    public List<Comment> listByPost(Long postId) {
-        return commentMapper.selectByPost(postId);
+    public List<Comment> listByTarget(Long targetType, Long targetId) {
+        return commentMapper.selectByTarget(targetType, targetId);
+    }
+
+    @Override
+    public Comment getById(Long id) {
+        if (id == null) return null;
+        return commentMapper.selectById(id);
+    }
+
+    @Override
+    public boolean updateLikeCount(Long id, int delta) {
+        if (id == null || delta == 0) return false;
+        return commentMapper.updateLikeCount(id, delta) > 0;
+    }
+
+    @Override
+    public boolean deleteById(Long id) {
+        if (id == null) return false;
+        return commentMapper.deleteById(id) > 0;
     }
 }

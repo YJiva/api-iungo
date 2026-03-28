@@ -4,18 +4,17 @@ import com.apiiungo.entity.Role;
 import com.apiiungo.entity.User;
 import com.apiiungo.mapper.RoleMapper;
 import com.apiiungo.service.UserService;
+import com.apiiungo.service.FollowService;
 import com.apiiungo.utils.EmailUtil;
 import com.apiiungo.utils.EmailCodeStore;
 import com.apiiungo.utils.RandomUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/user")
@@ -29,6 +28,8 @@ public class UserController {
     private EmailCodeStore emailCodeStore;
     @Autowired
     private RoleMapper roleMapper;
+    @Autowired
+    private FollowService followService;
 
     // 发送邮箱验证码（注册/登录）
     @PostMapping("/send-email-code")
@@ -164,6 +165,8 @@ public class UserController {
             result.put("msg", "无权限");
             return result;
         }
+        // 普通用户资料更新不允许修改 roleId
+        user.setRoleId(null);
         boolean ok = userService.updateProfile(user);
         if (ok) {
             result.put("code", 200);
@@ -325,6 +328,40 @@ public class UserController {
         result.put("code", 200);
         Map<String, Object> data = new HashMap<>();
         data.put("code", code);
+        result.put("data", data);
+        return result;
+    }
+
+    // 公开主页资料（用于他人查看）
+    @GetMapping("/public-profile")
+    public Map<String, Object> publicProfile(@RequestParam Long userId) {
+        Map<String, Object> result = new HashMap<>();
+        User u = userService.findById(userId);
+        if (u == null) {
+            result.put("code", 404);
+            result.put("msg", "用户不存在");
+            return result;
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", u.getId());
+        data.put("username", u.getUsername());
+        data.put("nickname", u.getNickname());
+        data.put("avatar", u.getAvatar());
+        data.put("coverUrl", u.getCoverUrl());
+        data.put("bio", u.getBio());
+        data.put("gender", u.getGender());
+        data.put("roleId", u.getRoleId());
+        data.put("roleName", u.getRoleName());
+        data.put("createTime", u.getCreateTime());
+
+        // 可公开查看的信息：关注数、粉丝数
+        List<User> following = followService.listFollowing(userId);
+        List<User> followers = followService.listFollowers(userId);
+        data.put("followingCount", following == null ? 0 : following.size());
+        data.put("followersCount", followers == null ? 0 : followers.size());
+
+        result.put("code", 200);
         result.put("data", data);
         return result;
     }

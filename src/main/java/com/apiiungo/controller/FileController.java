@@ -119,5 +119,54 @@ public class FileController {
         result.put("data", data);
         return result;
     }
+
+    /**
+     * 富文本编辑器视频上传
+     */
+    @PostMapping(value = "/upload-editor-video", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Map<String, Object> uploadEditorVideo(@RequestParam("file") MultipartFile file) throws IOException {
+        Map<String, Object> result = new HashMap<>();
+        if (file == null || file.isEmpty()) {
+            result.put("code", 400);
+            result.put("msg", "文件为空");
+            return result;
+        }
+        // 视频限制：100MB
+        long maxSize = 100L * 1024 * 1024;
+        if (file.getSize() > maxSize) {
+            result.put("code", 400);
+            result.put("msg", "视频过大，请选择不超过100MB的文件");
+            return result;
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith("video/")) {
+            result.put("code", 400);
+            result.put("msg", "仅支持视频文件");
+            return result;
+        }
+
+        String dateDir = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        Path videoDir = Paths.get(System.getProperty("user.dir"), "upload", "editor-video", dateDir);
+        Files.createDirectories(videoDir);
+
+        String original = StringUtils.cleanPath(file.getOriginalFilename() == null ? "video.mp4" : file.getOriginalFilename());
+        String ext = "";
+        int dot = original.lastIndexOf('.');
+        if (dot >= 0) {
+            ext = original.substring(dot);
+        }
+        String filename = System.currentTimeMillis() + ext;
+        Path target = videoDir.resolve(filename);
+        Files.createDirectories(target.getParent());
+        file.transferTo(target.toFile());
+
+        String url = "/upload/editor-video/" + dateDir + "/" + filename;
+        result.put("code", 200);
+        result.put("msg", "上传成功");
+        Map<String, Object> data = new HashMap<>();
+        data.put("url", url);
+        result.put("data", data);
+        return result;
+    }
 }
 

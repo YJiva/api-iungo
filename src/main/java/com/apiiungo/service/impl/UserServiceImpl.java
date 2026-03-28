@@ -11,7 +11,6 @@ import com.apiiungo.utils.Md5Util;
 import com.apiiungo.utils.EmailCodeStore;
 import com.apiiungo.utils.RandomUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +51,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public User findByEmail(String email) {
         return userMapper.selectByEmail(email);
+    }
+
+    @Override
+    public User findById(Long id) {
+        return userMapper.selectById(id);
     }
 
     // 邮箱验证码登录

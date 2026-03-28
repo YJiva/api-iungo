@@ -6,10 +6,12 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
 @TableName("post")
-public class Post {
+public class
+Post {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Long authorId;
+    private Long categoryId;
     private String title;
     private String content;
     private String tags; // comma separated
@@ -24,6 +26,8 @@ public class Post {
     public void setId(Long id) { this.id = id; }
     public Long getAuthorId() { return authorId; }
     public void setAuthorId(Long authorId) { this.authorId = authorId; }
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
     public String getContent() { return content; }

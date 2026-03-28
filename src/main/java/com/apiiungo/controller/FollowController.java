@@ -55,8 +55,10 @@ public class FollowController {
             return result;
         }
         boolean following = followService.isFollowing(userId, targetId);
+        boolean followedBy = followService.isFollowing(targetId, userId);
         result.put("code", 200);
         result.put("following", following);
+        result.put("followedBy", followedBy);
         return result;
     }
 

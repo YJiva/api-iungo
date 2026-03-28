@@ -11,9 +11,11 @@ public interface CollectionMapper {
 
     int insert(Collection collection);
 
-    int delete(@Param("userId") Long userId, @Param("targetType") String targetType, @Param("targetId") Long targetId);
+    int delete(@Param("userId") Long userId, @Param("targetType") Long targetType, @Param("targetId") Long targetId);
 
-    int exists(@Param("userId") Long userId, @Param("targetType") String targetType, @Param("targetId") Long targetId);
+    int exists(@Param("userId") Long userId, @Param("targetType") Long targetType, @Param("targetId") Long targetId);
+
+    int countByTarget(@Param("targetType") Long targetType, @Param("targetId") Long targetId);
 
     List<Collection> selectByUser(@Param("userId") Long userId);
 }

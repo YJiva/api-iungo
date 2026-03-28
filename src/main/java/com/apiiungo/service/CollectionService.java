@@ -9,5 +9,11 @@ public interface CollectionService {
      * 返回当前用户的收藏列表，包含目标标题等简要信息。
      */
     List<Map<String, Object>> listForUser(Long userId);
+
+    boolean toggleCollection(Long userId, Long targetType, Long targetId);
+
+    boolean isCollected(Long userId, Long targetType, Long targetId);
+
+    int countCollections(Long targetType, Long targetId);
 }
 

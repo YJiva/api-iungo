@@ -9,6 +9,7 @@
         <result property="nickname" column="nickname"/>
         <result property="avatar" column="avatar"/>
         <result property="bio" column="bio"/>
+        <result property="followTime" column="follow_time"/>
         <result property="roleId" column="role_id"/>
         <result property="inviteCode" column="invite_code"/>
         <result property="inviterId" column="inviter_id"/>
@@ -37,7 +38,7 @@
 
     <!-- 我关注的人 -->
     <select id="selectFollowing" resultMap="UserResult">
-        SELECT u.*
+        SELECT u.*, f.create_time AS follow_time
         FROM follow f
                  JOIN user u ON f.target_id = u.id
         WHERE f.user_id = #{userId}
@@ -46,7 +47,7 @@
 
     <!-- 关注我的人 -->
     <select id="selectFollowers" resultMap="UserResult">
-        SELECT u.*
+        SELECT u.*, f.create_time AS follow_time
         FROM follow f
                  JOIN user u ON f.user_id = u.id
         WHERE f.target_id = #{userId}

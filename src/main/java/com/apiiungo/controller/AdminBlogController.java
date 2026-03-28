@@ -51,7 +51,11 @@ public class AdminBlogController {
     }
 
     @GetMapping("/list")
-    public Map<String, Object> list(HttpServletRequest request) {
+    public Map<String, Object> list(@RequestParam(defaultValue = "1") Integer page,
+                                    @RequestParam(defaultValue = "5") Integer size,
+                                    @RequestParam(required = false) String keyword,
+                                    @RequestParam(required = false) Long id,
+                                    HttpServletRequest request) {
         Map<String, Object> result = new HashMap<>();
         User admin = getCurrentUser(request);
         if (!isAdmin(admin)) {
@@ -59,9 +63,39 @@ public class AdminBlogController {
             result.put("msg", "无权限");
             return result;
         }
-        List<Blog> blogs = blogMapper.selectAll();
+        List<Blog> all = blogMapper.selectAll();
+        List<Blog> filtered = new ArrayList<>();
+        String kw = keyword == null ? null : keyword.trim().toLowerCase();
+        for (Blog b : all) {
+            if (b == null) continue;
+            if (id != null) {
+                if (Objects.equals(b.getId(), id) || Objects.equals(b.getUserId(), id)) {
+                    filtered.add(b);
+                }
+                continue;
+            }
+            if (kw == null || kw.isEmpty()) {
+                filtered.add(b);
+                continue;
+            }
+            String hay = (Objects.toString(b.getTitle(), "") + " "
+                    + Objects.toString(b.getContent(), "") + " "
+                    + Objects.toString(b.getTags(), "") + " "
+                    + Objects.toString(b.getUserId(), "")).toLowerCase();
+            if (hay.contains(kw)) {
+                filtered.add(b);
+            }
+        }
+
+        int safePage = page == null || page < 1 ? 1 : page;
+        int safeSize = size == null || size < 1 ? 5 : Math.min(size, 100);
+        int total = filtered.size();
+        int from = Math.min((safePage - 1) * safeSize, total);
+        int to = Math.min(from + safeSize, total);
+        List<Blog> blogs = filtered.subList(from, to);
         result.put("code", 200);
         result.put("data", blogs);
+        result.put("total", total);
         return result;
     }
 
@@ -119,8 +153,17 @@ public class AdminBlogController {
 
         int n;
         if (blog.getId() == null) {
+            blog.setId(System.currentTimeMillis());
+        }
+
+        // 如果该ID不存在，走 insert；存在则 update
+        Blog exists = blogMapper.selectById(blog.getId());
+        if (exists == null) {
             blog.setCreateTime(now);
             blog.setUpdateTime(now);
+            if (blog.getRead() == null) {
+                blog.setRead(0L);
+            }
             n = blogMapper.insertBlog(blog);
         } else {
             blog.setUpdateTime(now);

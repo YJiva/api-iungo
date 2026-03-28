@@ -13,6 +13,11 @@ spring:
   config:
     import: classpath:env-mail.yml
 
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 120MB
+
   # JSP-Model2 核心：视图解析器
   mvc:
     view:

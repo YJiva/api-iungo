@@ -53,7 +53,16 @@
         SELECT *
         FROM blog
         WHERE status = 1
-          AND open_scope = 2
+          AND (open_scope = 2 OR open_scope IS NULL)
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectPublicByUser" resultMap="BlogResult">
+        SELECT *
+        FROM blog
+        WHERE status = 1
+          AND (open_scope = 2 OR open_scope IS NULL)
+          AND user_id = #{userId}
         ORDER BY create_time DESC
     </select>
 

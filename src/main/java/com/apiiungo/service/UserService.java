@@ -26,4 +26,7 @@ public interface UserService {
 
     // 根据邮箱查询用户
     User findByEmail(String email);
+
+    // 根据ID查询用户
+    User findById(Long id);
 }

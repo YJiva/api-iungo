@@ -3,18 +3,27 @@
 <mapper namespace="com.apiiungo.mapper.PostMapper">
 
     <insert id="insertPost" parameterType="com.apiiungo.entity.Post" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO post (author_id, title, content, tags, likes, favorites, comments, status, create_time, update_time)
-        VALUES (#{authorId}, #{title}, #{content}, #{tags}, #{likes, jdbcType=INTEGER}, #{favorites, jdbcType=INTEGER}, #{comments, jdbcType=INTEGER}, #{status, jdbcType=INTEGER}, #{createTime}, #{updateTime})
+        INSERT INTO post (author_id, category_id, title, content, tags, likes, favorites, comments, status, create_time, update_time)
+        VALUES (#{authorId}, #{categoryId}, #{title}, #{content}, #{tags}, #{likes, jdbcType=INTEGER}, #{favorites, jdbcType=INTEGER}, #{comments, jdbcType=INTEGER}, #{status, jdbcType=INTEGER}, #{createTime}, #{updateTime})
     </insert>
 
     <select id="selectById" parameterType="long" resultType="com.apiiungo.entity.Post">
-        SELECT id, author_id AS authorId, title, content, tags, likes, favorites, comments, status, create_time AS createTime, update_time AS updateTime
+        SELECT id, author_id AS authorId, category_id AS categoryId, title, content, tags, likes, favorites, comments, status, create_time AS createTime, update_time AS updateTime
         FROM post WHERE id = #{id} AND status = 0
     </select>
 
     <select id="selectRecent" resultType="com.apiiungo.entity.Post">
-        SELECT id, author_id AS authorId, title, content, tags, likes, favorites, comments, status, create_time AS createTime, update_time AS updateTime
+        SELECT id, author_id AS authorId, category_id AS categoryId, title, content, tags, likes, favorites, comments, status, create_time AS createTime, update_time AS updateTime
         FROM post WHERE status = 0 ORDER BY create_time DESC LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectByCategory" resultType="com.apiiungo.entity.Post">
+        SELECT id, author_id AS authorId, category_id AS categoryId, title, content, tags, likes, favorites, comments, status, create_time AS createTime, update_time AS updateTime
+        FROM post
+        WHERE status = 0
+          AND category_id = #{categoryId}
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
     </select>
 
     <update id="updatePost" parameterType="com.apiiungo.entity.Post">
@@ -30,5 +39,12 @@
     <update id="incFavorites">
         UPDATE post SET favorites = IFNULL(favorites,0) + 1 WHERE id = #{id}
     </update>
+
+    <select id="countByCategory" resultType="int">
+        SELECT COUNT(1)
+        FROM post
+        WHERE status = 0
+          AND category_id = #{categoryId}
+    </select>
 
 </mapper>

@@ -38,6 +38,11 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public List<Post> listByCategory(Long categoryId, int offset, int limit) {
+        return postMapper.selectByCategory(categoryId, offset, limit);
+    }
+
+    @Override
     public boolean likePost(Long id) {
         return postMapper.incLikes(id) > 0;
     }

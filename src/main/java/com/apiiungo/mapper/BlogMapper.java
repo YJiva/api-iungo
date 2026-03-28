@@ -19,6 +19,8 @@ public interface BlogMapper {
 
     List<Blog> selectPublic();
 
+    List<Blog> selectPublicByUser(@Param("userId") Long userId);
+
     // 查询所有已使用的标签（去重）
     List<String> selectAllTags();
 

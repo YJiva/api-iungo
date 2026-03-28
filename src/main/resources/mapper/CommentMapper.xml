@@ -3,15 +3,46 @@
 <mapper namespace="com.apiiungo.mapper.CommentMapper">
 
     <insert id="insertComment" parameterType="com.apiiungo.entity.Comment" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO comment (post_id, user_id, content, create_time)
-        VALUES (#{postId}, #{userId}, #{content}, #{createTime})
+        INSERT INTO comment (user_id, target_type, target_id, content, like_count, create_time)
+        VALUES (#{userId}, #{targetType}, #{targetId}, #{content}, #{likeCount}, #{createTime})
     </insert>
 
-    <select id="selectByPost" resultType="com.apiiungo.entity.Comment">
-        SELECT id, post_id AS postId, user_id AS userId, content, create_time AS createTime
-        FROM comment WHERE post_id = #{postId} ORDER BY create_time ASC
+    <select id="selectByTarget" resultType="com.apiiungo.entity.Comment">
+        SELECT id,
+               user_id AS userId,
+               target_type AS targetType,
+               target_id AS targetId,
+               content,
+               like_count AS likeCount,
+               create_time AS createTime
+        FROM comment
+        WHERE target_type = #{targetType}
+          AND target_id = #{targetId}
+        ORDER BY create_time ASC
     </select>
 
+    <select id="selectById" resultType="com.apiiungo.entity.Comment">
+        SELECT id,
+               user_id AS userId,
+               target_type AS targetType,
+               target_id AS targetId,
+               content,
+               like_count AS likeCount,
+               create_time AS createTime
+        FROM comment
+        WHERE id = #{id}
+        LIMIT 1
+    </select>
 
+    <update id="updateLikeCount">
+        UPDATE comment
+        SET like_count = GREATEST(0, IFNULL(like_count, 0) + #{delta})
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM comment
+        WHERE id = #{id}
+    </delete>
 
 </mapper>

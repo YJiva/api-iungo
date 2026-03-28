@@ -7,7 +7,8 @@ import java.time.LocalDateTime;
 
 @TableName("blog")
 public class Blog {
-    @TableId(type = IdType.AUTO)
+    // 管理后台创建时使用时间戳ID（由前端传入）
+    @TableId(type = IdType.INPUT)
     private Long id;
     private Long userId;
     private String title;

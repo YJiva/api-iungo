@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +28,11 @@ public class AdminUserController {
     private UserService userService;
 
     @GetMapping("/list")
-    public Map<String, Object> list(HttpServletRequest request) {
+    public Map<String, Object> list(@RequestParam(defaultValue = "1") Integer page,
+                                    @RequestParam(defaultValue = "5") Integer size,
+                                    @RequestParam(required = false) String keyword,
+                                    @RequestParam(required = false) Long id,
+                                    HttpServletRequest request) {
         Map<String, Object> result = new HashMap<>();
         User admin = getCurrentUser(request);
         if (admin == null || admin.getRoleId() == null || admin.getRoleId() != 2L) {
@@ -35,9 +40,40 @@ public class AdminUserController {
             result.put("msg", "无权限");
             return result;
         }
-        List<User> users = userMapper.selectAll();
+        List<User> all = userMapper.selectAll();
+        List<User> filtered = new ArrayList<>();
+        String kw = keyword == null ? null : keyword.trim().toLowerCase();
+        for (User u : all) {
+            if (u == null) continue;
+            if (id != null) {
+                if (u.getId() != null && u.getId().equals(id)) {
+                    filtered.add(u);
+                }
+                continue;
+            }
+            if (kw == null || kw.isEmpty()) {
+                filtered.add(u);
+                continue;
+            }
+            String hay = (String.valueOf(u.getId()) + " "
+                    + String.valueOf(u.getUsername()) + " "
+                    + String.valueOf(u.getNickname()) + " "
+                    + String.valueOf(u.getEmail()) + " "
+                    + String.valueOf(u.getBio())).toLowerCase();
+            if (hay.contains(kw)) {
+                filtered.add(u);
+            }
+        }
+
+        int safePage = page == null || page < 1 ? 1 : page;
+        int safeSize = size == null || size < 1 ? 5 : Math.min(size, 100);
+        int total = filtered.size();
+        int from = Math.min((safePage - 1) * safeSize, total);
+        int to = Math.min(from + safeSize, total);
+        List<User> users = filtered.subList(from, to);
         result.put("code", 200);
         result.put("data", users);
+        result.put("total", total);
         return result;
     }
 
@@ -118,7 +154,6 @@ public class AdminUserController {
         if (input.getAvatar() != null) db.setAvatar(input.getAvatar());
         if (input.getBio() != null) db.setBio(input.getBio());
         if (input.getGender() != null) db.setGender(input.getGender());
-        if (input.getRoleId() != null) db.setRoleId(input.getRoleId());
         if (input.getStatus() != null) db.setStatus(input.getStatus());
 
         // 明确不允许通过该接口修改密码

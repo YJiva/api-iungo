@@ -3,20 +3,30 @@
 <mapper namespace="com.apiiungo.mapper.FavoriteMapper">
 
     <insert id="insertFavorite" parameterType="com.apiiungo.entity.Favorite" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO favorite (post_id, user_id, create_time)
-        VALUES (#{postId}, #{userId}, #{createTime})
+        INSERT INTO favorite (user_id, target_type, target_id, create_time)
+        VALUES (#{userId}, #{targetType}, #{targetId}, #{createTime})
     </insert>
 
     <delete id="deleteFavorite">
-        DELETE FROM favorite WHERE post_id = #{postId} AND user_id = #{userId}
+        DELETE FROM favorite
+        WHERE user_id = #{userId}
+          AND target_type = #{targetType}
+          AND target_id = #{targetId}
     </delete>
 
-    <select id="countByPost" resultType="int">
-        SELECT COUNT(*) FROM favorite WHERE post_id = #{postId}
+    <select id="countByTarget" resultType="int">
+        SELECT COUNT(*)
+        FROM favorite
+        WHERE target_type = #{targetType}
+          AND target_id = #{targetId}
     </select>
 
     <select id="exists" resultType="int">
-        SELECT COUNT(*) FROM favorite WHERE post_id = #{postId} AND user_id = #{userId}
+        SELECT COUNT(*)
+        FROM favorite
+        WHERE user_id = #{userId}
+          AND target_type = #{targetType}
+          AND target_id = #{targetId}
     </select>
 
 </mapper>

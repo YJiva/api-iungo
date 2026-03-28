@@ -126,4 +126,29 @@ public class BlogController {
         result.put("data", data);
         return result;
     }
+
+    /**
+     * 用户公开博客分页
+     */
+    @GetMapping("/public-by-user")
+    public Map<String, Object> publicByUser(@RequestParam Long userId,
+                                            @RequestParam(defaultValue = "1") int page,
+                                            @RequestParam(defaultValue = "5") int pageSize) {
+        Map<String, Object> result = new HashMap<>();
+        if (userId == null) {
+            result.put("code", 400);
+            result.put("msg", "userId 不能为空");
+            return result;
+        }
+        List<Blog> list = blogService.listPublicByUser(userId, page, pageSize);
+        long total = blogService.countPublicByUser(userId);
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);
+        data.put("total", total);
+        data.put("page", page);
+        data.put("pageSize", pageSize);
+        result.put("code", 200);
+        result.put("data", data);
+        return result;
+    }
 }
