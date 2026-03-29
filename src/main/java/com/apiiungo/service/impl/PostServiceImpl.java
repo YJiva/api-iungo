@@ -3,6 +3,7 @@ package com.apiiungo.service.impl;
 import com.apiiungo.entity.Post;
 import com.apiiungo.mapper.PostMapper;
 import com.apiiungo.service.PostService;
+import com.apiiungo.util.TimestampId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,9 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public Post createPost(Post post) {
+        if (post.getId() == null) {
+            post.setId(TimestampId.next());
+        }
         if (post.getCreateTime() == null) post.setCreateTime(LocalDateTime.now());
         post.setUpdateTime(LocalDateTime.now());
         if (post.getLikes() == null) post.setLikes(0);
@@ -43,12 +47,49 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public List<Post> listByCategoryWithFilter(Long categoryId, int offset, int limit, String keyword, Integer essenceOnly) {
+        return postMapper.selectByCategoryWithFilter(categoryId, offset, limit, keyword, essenceOnly);
+    }
+
+    @Override
     public boolean likePost(Long id) {
+        if (id == null) {
+            return false;
+        }
         return postMapper.incLikes(id) > 0;
+    }
+
+    @Override
+    public boolean unlikePost(Long id) {
+        if (id == null) {
+            return false;
+        }
+        return postMapper.decLikes(id) > 0;
     }
 
     @Override
     public boolean favoritePost(Long id) {
         return postMapper.incFavorites(id) > 0;
+    }
+
+    @Override
+    public boolean deletePost(Long id) {
+        return postMapper.softDeleteById(id) > 0;
+    }
+
+    @Override
+    public boolean toggleTop(Long id) {
+        return postMapper.toggleTop(id) > 0;
+    }
+
+    @Override
+    public boolean toggleEssence(Long id) {
+        return postMapper.toggleEssence(id) > 0;
+    }
+
+    @Override
+    public boolean decCommentsByPost(Long id, int delta) {
+        if (id == null || delta <= 0) return false;
+        return postMapper.decCommentsByPost(id, delta) > 0;
     }
 }

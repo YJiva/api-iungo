@@ -2,27 +2,53 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.apiiungo.mapper.PostMapper">
 
-    <insert id="insertPost" parameterType="com.apiiungo.entity.Post" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO post (author_id, category_id, title, content, tags, likes, favorites, comments, status, create_time, update_time)
-        VALUES (#{authorId}, #{categoryId}, #{title}, #{content}, #{tags}, #{likes, jdbcType=INTEGER}, #{favorites, jdbcType=INTEGER}, #{comments, jdbcType=INTEGER}, #{status, jdbcType=INTEGER}, #{createTime}, #{updateTime})
+    <insert id="insertPost" parameterType="com.apiiungo.entity.Post">
+        INSERT INTO post (id, author_id, category_id, title, content, tags, likes, favorites, comments, status, create_time, update_time)
+        VALUES (#{id}, #{authorId}, #{categoryId}, #{title}, #{content}, #{tags}, #{likes, jdbcType=INTEGER}, #{favorites, jdbcType=INTEGER}, #{comments, jdbcType=INTEGER}, #{status, jdbcType=INTEGER}, #{createTime}, #{updateTime})
     </insert>
 
     <select id="selectById" parameterType="long" resultType="com.apiiungo.entity.Post">
-        SELECT id, author_id AS authorId, category_id AS categoryId, title, content, tags, likes, favorites, comments, status, create_time AS createTime, update_time AS updateTime
+        SELECT id, author_id AS authorId, category_id AS categoryId, title, content, tags,
+               likes, favorites, comments, views, is_top AS isTop, is_essence AS isEssence,
+               status, create_time AS createTime, update_time AS updateTime
         FROM post WHERE id = #{id} AND status = 0
     </select>
 
     <select id="selectRecent" resultType="com.apiiungo.entity.Post">
-        SELECT id, author_id AS authorId, category_id AS categoryId, title, content, tags, likes, favorites, comments, status, create_time AS createTime, update_time AS updateTime
-        FROM post WHERE status = 0 ORDER BY create_time DESC LIMIT #{offset}, #{limit}
+        SELECT id, author_id AS authorId, category_id AS categoryId, title, content, tags,
+               likes, favorites, comments, views, is_top AS isTop, is_essence AS isEssence,
+               status, create_time AS createTime, update_time AS updateTime
+        FROM post
+        WHERE status = 0
+        ORDER BY IFNULL(is_top, 0) DESC, IFNULL(is_essence, 0) DESC, create_time DESC
+        LIMIT #{offset}, #{limit}
     </select>
 
     <select id="selectByCategory" resultType="com.apiiungo.entity.Post">
-        SELECT id, author_id AS authorId, category_id AS categoryId, title, content, tags, likes, favorites, comments, status, create_time AS createTime, update_time AS updateTime
+        SELECT id, author_id AS authorId, category_id AS categoryId, title, content, tags,
+               likes, favorites, comments, views, is_top AS isTop, is_essence AS isEssence,
+               status, create_time AS createTime, update_time AS updateTime
         FROM post
         WHERE status = 0
           AND category_id = #{categoryId}
-        ORDER BY create_time DESC
+        ORDER BY IFNULL(is_top, 0) DESC, IFNULL(is_essence, 0) DESC, create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectByCategoryWithFilter" resultType="com.apiiungo.entity.Post">
+        SELECT id, author_id AS authorId, category_id AS categoryId, title, content, tags,
+               likes, favorites, comments, views, is_top AS isTop, is_essence AS isEssence,
+               status, create_time AS createTime, update_time AS updateTime
+        FROM post
+        WHERE status = 0
+          AND category_id = #{categoryId}
+          <if test="keyword != null and keyword != ''">
+              AND (title LIKE CONCAT('%', #{keyword}, '%') OR content LIKE CONCAT('%', #{keyword}, '%'))
+          </if>
+          <if test="essenceOnly != null and essenceOnly == 1">
+              AND IFNULL(is_essence, 0) = 1
+          </if>
+        ORDER BY IFNULL(is_top, 0) DESC, IFNULL(is_essence, 0) DESC, create_time DESC
         LIMIT #{offset}, #{limit}
     </select>
 
@@ -36,8 +62,42 @@
         UPDATE post SET likes = IFNULL(likes,0) + 1 WHERE id = #{id}
     </update>
 
+    <update id="decLikes">
+        UPDATE post
+        SET likes = GREATEST(0, IFNULL(likes, 0) - 1)
+        WHERE id = #{id}
+    </update>
+
     <update id="incFavorites">
         UPDATE post SET favorites = IFNULL(favorites,0) + 1 WHERE id = #{id}
+    </update>
+
+    <update id="softDeleteById">
+        UPDATE post
+        SET status = 1,
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="toggleTop">
+        UPDATE post
+        SET is_top = CASE WHEN IFNULL(is_top, 0) = 1 THEN 0 ELSE 1 END,
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="toggleEssence">
+        UPDATE post
+        SET is_essence = CASE WHEN IFNULL(is_essence, 0) = 1 THEN 0 ELSE 1 END,
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="decCommentsByPost">
+        UPDATE post
+        SET comments = GREATEST(0, IFNULL(comments, 0) - #{delta}),
+            update_time = NOW()
+        WHERE id = #{id}
     </update>
 
     <select id="countByCategory" resultType="int">
@@ -45,6 +105,70 @@
         FROM post
         WHERE status = 0
           AND category_id = #{categoryId}
+    </select>
+
+    <select id="countByAuthorId" resultType="long">
+        SELECT COUNT(*)
+        FROM post
+        WHERE author_id = #{authorId}
+          AND status = 0
+    </select>
+
+    <select id="selectByAuthorId" resultType="com.apiiungo.entity.Post">
+        SELECT id,
+               author_id AS authorId,
+               category_id AS categoryId,
+               title,
+               content,
+               tags,
+               likes,
+               favorites,
+               comments,
+               views,
+               is_top AS isTop,
+               is_essence AS isEssence,
+               status,
+               create_time AS createTime,
+               update_time AS updateTime
+        FROM post
+        WHERE author_id = #{authorId}
+          AND status = 0
+        ORDER BY create_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countLikedByUser" resultType="long">
+        SELECT COUNT(*)
+        FROM `like` l
+        WHERE l.user_id = #{userId}
+          AND l.target_type = #{targetType}
+          AND l.action = 'LIKE'
+    </select>
+
+    <select id="selectLikedByUserPage" resultType="com.apiiungo.entity.Post">
+        SELECT p.id,
+               p.author_id AS authorId,
+               p.category_id AS categoryId,
+               p.title,
+               p.content,
+               p.tags,
+               p.likes,
+               p.favorites,
+               p.comments,
+               p.views,
+               p.is_top AS isTop,
+               p.is_essence AS isEssence,
+               p.status,
+               p.create_time AS createTime,
+               p.update_time AS updateTime
+        FROM post p
+                 INNER JOIN `like` l ON l.target_id = p.id
+            AND l.user_id = #{userId}
+            AND l.target_type = #{targetType}
+            AND l.action = 'LIKE'
+        WHERE p.status = 0
+        ORDER BY l.create_time DESC
+        LIMIT #{limit} OFFSET #{offset}
     </select>
 
 </mapper>

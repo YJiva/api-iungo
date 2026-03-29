@@ -3,6 +3,7 @@ package com.apiiungo.service.impl;
 import com.apiiungo.entity.Comment;
 import com.apiiungo.mapper.CommentMapper;
 import com.apiiungo.service.CommentService;
+import com.apiiungo.util.TimestampId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,9 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public Comment addComment(Comment comment) {
+        if (comment.getId() == null) {
+            comment.setId(TimestampId.next());
+        }
         comment.setCreateTime(LocalDateTime.now());
         if (comment.getLikeCount() == null) {
             comment.setLikeCount(0);

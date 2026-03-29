@@ -16,9 +16,9 @@
         <result property="read" column="read"/>
     </resultMap>
 
-    <insert id="insertBlog" parameterType="com.apiiungo.entity.Blog" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO blog (user_id, title, content, tags, status, top, open_scope, create_time, update_time, `read`)
-        VALUES (#{userId}, #{title}, #{content}, #{tags},
+    <insert id="insertBlog" parameterType="com.apiiungo.entity.Blog">
+        INSERT INTO blog (id, user_id, title, content, tags, status, top, open_scope, create_time, update_time, `read`)
+        VALUES (#{id}, #{userId}, #{title}, #{content}, #{tags},
                 #{status, jdbcType=TINYINT}, #{top, jdbcType=TINYINT}, #{openScope, jdbcType=TINYINT},
                 #{createTime}, #{updateTime}, #{read})
     </insert>
@@ -49,22 +49,166 @@
         ORDER BY create_time DESC
     </select>
 
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(*)
+        FROM blog
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="selectByUserIdPage" resultMap="BlogResult">
+        SELECT *
+        FROM blog
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countLikedByUser" resultType="long">
+        SELECT COUNT(*)
+        FROM `like` l
+        WHERE l.user_id = #{userId}
+          AND l.target_type = #{targetType}
+          AND l.action = 'LIKE'
+    </select>
+
+    <select id="selectLikedByUserPage" resultMap="BlogResult">
+        SELECT b.*
+        FROM blog b
+                 INNER JOIN `like` l ON l.target_id = b.id
+            AND l.user_id = #{userId}
+            AND l.target_type = #{targetType}
+            AND l.action = 'LIKE'
+        ORDER BY l.create_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
     <select id="selectPublic" resultMap="BlogResult">
         SELECT *
         FROM blog
         WHERE status = 1
-          AND (open_scope = 2 OR open_scope IS NULL)
-        ORDER BY create_time DESC
+          AND open_scope = 4
+        ORDER BY IFNULL(top, 0) DESC,
+                 CASE WHEN IFNULL(top, 0) = 1 THEN IFNULL(`read`, 0) ELSE 0 END DESC,
+                 create_time DESC
     </select>
 
     <select id="selectPublicByUser" resultMap="BlogResult">
         SELECT *
         FROM blog
         WHERE status = 1
-          AND (open_scope = 2 OR open_scope IS NULL)
+          AND open_scope = 4
           AND user_id = #{userId}
-        ORDER BY create_time DESC
+        ORDER BY IFNULL(top, 0) DESC,
+                 CASE WHEN IFNULL(top, 0) = 1 THEN IFNULL(`read`, 0) ELSE 0 END DESC,
+                 create_time DESC
     </select>
+
+    <!-- 圈层：仅粉丝可见 open_scope=2；当前用户已关注作者 -->
+    <select id="selectCircleBlogs" resultMap="BlogResult">
+        SELECT b.*
+        FROM follow f
+                 JOIN blog b ON b.user_id = f.target_id
+        WHERE f.user_id = #{viewerId}
+          AND b.status = 1
+          AND b.open_scope = 2
+        ORDER BY b.create_time DESC
+    </select>
+
+    <select id="selectCloseFriendBlogs" resultMap="BlogResult">
+        SELECT b.*
+        FROM blog b
+        WHERE b.status = 1
+          AND b.open_scope = 3
+          AND (
+            b.user_id = #{viewerId}
+                OR (
+                EXISTS (SELECT 1 FROM follow f1 WHERE f1.user_id = #{viewerId} AND f1.target_id = b.user_id)
+                    AND EXISTS (SELECT 1 FROM follow f2 WHERE f2.user_id = b.user_id AND f2.target_id = #{viewerId})
+                )
+            )
+        ORDER BY b.create_time DESC
+    </select>
+
+    <sql id="publicBlogWhere">
+        WHERE b.status = 1
+          AND b.open_scope = 4
+        <if test="pattern != null">
+            AND (
+            b.title LIKE #{pattern}
+                OR b.content LIKE #{pattern}
+                OR u.nickname LIKE #{pattern}
+                OR u.username LIKE #{pattern}
+                OR EXISTS (
+                SELECT 1 FROM blog_type bt
+                WHERE FIND_IN_SET(bt.id, b.tags) &gt; 0
+                  AND bt.name LIKE #{pattern}
+                )
+                )
+        </if>
+    </sql>
+
+    <select id="countPublicBlogItems" resultType="long">
+        SELECT COUNT(DISTINCT b.id)
+        FROM blog b
+        LEFT JOIN user u ON b.user_id = u.id
+        <include refid="publicBlogWhere"/>
+    </select>
+
+    <select id="selectPublicBlogItems" resultType="com.apiiungo.vo.PublicBlogItem">
+        SELECT b.id,
+               b.title,
+               b.content,
+               b.user_id AS userId,
+               b.create_time AS createTime,
+               b.`read`,
+               b.tags,
+               b.top,
+               b.open_scope AS openScope,
+               u.nickname AS authorNickname,
+               u.username AS authorUsername
+        FROM blog b
+        LEFT JOIN user u ON b.user_id = u.id
+        <include refid="publicBlogWhere"/>
+        ORDER BY IFNULL(b.top, 0) DESC,
+                 CASE WHEN IFNULL(b.top, 0) = 1 THEN IFNULL(b.`read`, 0) ELSE 0 END DESC,
+                 b.create_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="selectLatestDraftByUser" resultMap="BlogResult">
+        SELECT *
+        FROM blog
+        WHERE user_id = #{userId}
+          AND open_scope = 0
+        ORDER BY update_time DESC, id DESC
+        LIMIT 1
+    </select>
+
+    <delete id="clearDraftByUser">
+        DELETE
+        FROM blog
+        WHERE user_id = #{userId}
+          AND open_scope = 0
+    </delete>
+
+    <select id="selectPreferredScopeByUser" resultType="java.lang.Integer">
+        SELECT open_scope
+        FROM blog
+        WHERE user_id = #{userId}
+          AND status = 1
+          AND open_scope IN (1,2,3,4)
+        ORDER BY update_time DESC, id DESC
+        LIMIT 1
+    </select>
+
+    <update id="updateScopeByUser">
+        UPDATE blog
+        SET open_scope = #{openScope},
+            update_time = NOW()
+        WHERE user_id = #{userId}
+          AND status = 1
+          AND open_scope IN (1,2,3,4)
+    </update>
 
     <!-- 查询所有已使用的标签，按逗号拆分并去重。
          简单实现：直接返回去重后的 tags 字符串，前端可再拆分。 -->

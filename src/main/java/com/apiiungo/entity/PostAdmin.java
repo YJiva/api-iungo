@@ -6,6 +6,7 @@ public class PostAdmin {
     private Long id;
     private Long categoryId;
     private Long userId;
+    private Long roleId;
     private String role;
     private Integer status;
     private LocalDateTime createTime;
@@ -17,6 +18,8 @@ public class PostAdmin {
     public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+    public Long getRoleId() { return roleId; }
+    public void setRoleId(Long roleId) { this.roleId = roleId; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
     public Integer getStatus() { return status; }

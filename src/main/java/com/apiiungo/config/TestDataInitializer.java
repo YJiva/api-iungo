@@ -8,6 +8,7 @@ import com.apiiungo.mapper.UserMapper;
 import com.apiiungo.mapper.PostMapper;
 import com.apiiungo.mapper.CommentMapper;
 import com.apiiungo.mapper.FavoriteMapper;
+import com.apiiungo.util.TimestampId;
 import com.apiiungo.utils.Md5Util;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -62,6 +63,7 @@ public class TestDataInitializer implements CommandLineRunner {
             List<Post> recentPosts = postMapper.selectRecent(0, 1);
             if (recentPosts == null || recentPosts.isEmpty()) {
                 Post p = new Post();
+                p.setId(TimestampId.next());
                 p.setAuthorId(testUser.getId());
                 p.setTitle("Welcome to the blog");
                 p.setContent("This is a sample post created by TestDataInitializer.");
@@ -77,6 +79,7 @@ public class TestDataInitializer implements CommandLineRunner {
 
                 // 添加评论和收藏
                 Comment c = new Comment();
+                c.setId(TimestampId.next());
                 c.setTargetType(2L); // target: post
                 c.setTargetId(p.getId());
                 c.setUserId(testUser.getId());

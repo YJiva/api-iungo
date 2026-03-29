@@ -6,13 +6,17 @@
         <id property="id" column="id"/>
         <result property="userId" column="user_id"/>
         <result property="message" column="message"/>
+        <result property="type" column="type"/>
+        <result property="sourceTitle" column="source_title"/>
+        <result property="sourceCategory" column="source_category"/>
         <result property="read" column="read"/>
+        <result property="jumpUrl" column="jump_url"/>
         <result property="createTime" column="create_time"/>
     </resultMap>
 
-    <insert id="insert" parameterType="com.apiiungo.entity.Sub" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO sub (user_id, message, `read`, create_time)
-        VALUES (#{userId}, #{message}, #{read, jdbcType=TINYINT}, #{createTime})
+    <insert id="insert" parameterType="com.apiiungo.entity.Sub">
+        INSERT INTO sub (id, user_id, message, type, source_title, source_category, jump_url, `read`, create_time)
+        VALUES (#{id}, #{userId}, #{message}, #{type}, #{sourceTitle}, #{sourceCategory}, #{jumpUrl}, #{read, jdbcType=TINYINT}, #{createTime})
     </insert>
 
     <select id="selectByUser" parameterType="long" resultMap="SubResult">
@@ -35,6 +39,26 @@
         WHERE user_id = #{userId}
           AND `read` = 0
     </update>
+
+    <delete id="deleteById">
+        DELETE
+        FROM sub
+        WHERE id = #{id}
+          AND user_id = #{userId}
+    </delete>
+
+    <delete id="deleteAll">
+        DELETE
+        FROM sub
+        WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="deleteRead">
+        DELETE
+        FROM sub
+        WHERE user_id = #{userId}
+          AND `read` = 1
+    </delete>
 
 </mapper>
 

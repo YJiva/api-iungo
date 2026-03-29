@@ -2,9 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.apiiungo.mapper.CommentMapper">
 
-    <insert id="insertComment" parameterType="com.apiiungo.entity.Comment" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO comment (user_id, target_type, target_id, content, like_count, create_time)
-        VALUES (#{userId}, #{targetType}, #{targetId}, #{content}, #{likeCount}, #{createTime})
+    <insert id="insertComment" parameterType="com.apiiungo.entity.Comment">
+        INSERT INTO comment (id, user_id, target_type, target_id, content, like_count, create_time)
+        VALUES (#{id}, #{userId}, #{targetType}, #{targetId}, #{content}, #{likeCount}, #{createTime})
     </insert>
 
     <select id="selectByTarget" resultType="com.apiiungo.entity.Comment">

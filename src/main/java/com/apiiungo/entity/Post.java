@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @TableName("post")
 public class
 Post {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.INPUT)
     private Long id;
     private Long authorId;
     private Long categoryId;
@@ -18,6 +18,9 @@ Post {
     private Integer likes;
     private Integer favorites;
     private Integer comments;
+    private Long views;
+    private Integer isTop;
+    private Integer isEssence;
     private Integer status; // 0 normal, 1 deleted
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
@@ -40,6 +43,12 @@ Post {
     public void setFavorites(Integer favorites) { this.favorites = favorites; }
     public Integer getComments() { return comments; }
     public void setComments(Integer comments) { this.comments = comments; }
+    public Long getViews() { return views; }
+    public void setViews(Long views) { this.views = views; }
+    public Integer getIsTop() { return isTop; }
+    public void setIsTop(Integer isTop) { this.isTop = isTop; }
+    public Integer getIsEssence() { return isEssence; }
+    public void setIsEssence(Integer isEssence) { this.isEssence = isEssence; }
     public Integer getStatus() { return status; }
     public void setStatus(Integer status) { this.status = status; }
     public LocalDateTime getCreateTime() { return createTime; }

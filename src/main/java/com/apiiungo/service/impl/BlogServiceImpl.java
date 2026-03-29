@@ -3,11 +3,14 @@ package com.apiiungo.service.impl;
 import com.apiiungo.entity.Blog;
 import com.apiiungo.mapper.BlogMapper;
 import com.apiiungo.service.BlogService;
+import com.apiiungo.util.TimestampId;
+import com.apiiungo.vo.PublicBlogItem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,11 +36,12 @@ public class BlogServiceImpl implements BlogService {
             blog.setTop(0);
         }
         if (blog.getOpenScope() == null) {
-            // 默认 2 表示公开
-            blog.setOpenScope(2);
+            // 默认 4 表示全部可见；0 代表草稿
+            blog.setOpenScope(4);
         }
         int affected;
         if (blog.getId() == null) {
+            blog.setId(TimestampId.next());
             affected = blogMapper.insertBlog(blog);
         } else {
             affected = blogMapper.updateBlog(blog);
@@ -131,5 +135,55 @@ public class BlogServiceImpl implements BlogService {
     public long countPublicByUser(Long userId) {
         List<Blog> all = blogMapper.selectPublicByUser(userId);
         return all == null ? 0 : all.size();
+    }
+
+    @Override
+    public Blog getLatestDraft(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        return blogMapper.selectLatestDraftByUser(userId);
+    }
+
+    @Override
+    public int clearDraft(Long userId) {
+        if (userId == null) {
+            return 0;
+        }
+        return blogMapper.clearDraftByUser(userId);
+    }
+
+    @Override
+    public List<Blog> listCircleBlogs(Long viewerId) {
+        if (viewerId == null) {
+            return new ArrayList<>();
+        }
+        return blogMapper.selectCircleBlogs(viewerId);
+    }
+
+    @Override
+    public List<Blog> listCloseFriendBlogs(Long viewerId) {
+        if (viewerId == null) {
+            return new ArrayList<>();
+        }
+        return blogMapper.selectCloseFriendBlogs(viewerId);
+    }
+
+    @Override
+    public Map<String, Object> pagePublicBlogs(String keyword, int page, int pageSize) {
+        String kw = keyword == null ? "" : keyword.trim();
+        String pattern = kw.isEmpty() ? null : "%" + kw + "%";
+        int p = Math.max(page, 1);
+        int size = Math.min(Math.max(pageSize, 1), 2000);
+        int offset = (p - 1) * size;
+        long total = blogMapper.countPublicBlogItems(pattern);
+        List<PublicBlogItem> list = blogMapper.selectPublicBlogItems(pattern, offset, size);
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);
+        data.put("total", total);
+        data.put("page", p);
+        data.put("pageSize", size);
+        data.put("hasMore", (long) p * size < total);
+        return data;
     }
 }

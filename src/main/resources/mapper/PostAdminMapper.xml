@@ -7,13 +7,34 @@
                category_id AS categoryId,
                user_id AS userId,
                role,
+               role_id AS roleId,
                status,
                create_time AS createTime,
                update_time AS updateTime
         FROM post_admin
         WHERE category_id = #{categoryId}
           AND status = 1
-        ORDER BY role DESC, id ASC
+        ORDER BY id ASC
+    </select>
+
+    <select id="selectViewByCategory" resultType="com.apiiungo.entity.PostAdminView">
+        SELECT pa.id,
+               pa.category_id AS categoryId,
+               pa.user_id AS userId,
+               pa.role_id AS roleId,
+               pa.role AS roleCode,
+               pr.name AS roleName,
+               pr.level AS roleLevel,
+               pa.status,
+               u.username,
+               u.nickname,
+               u.avatar
+        FROM post_admin pa
+        LEFT JOIN post_role pr ON pr.id = pa.role_id
+        LEFT JOIN `user` u ON u.id = pa.user_id
+        WHERE pa.category_id = #{categoryId}
+          AND pa.status = 1
+        ORDER BY pr.level DESC, pa.id ASC
     </select>
 
     <select id="existsActive" resultType="int">
@@ -25,8 +46,8 @@
     </select>
 
     <insert id="insert" parameterType="com.apiiungo.entity.PostAdmin" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO post_admin (category_id, user_id, role, status, create_time, update_time)
-        VALUES (#{categoryId}, #{userId}, #{role}, #{status}, #{createTime}, #{updateTime})
+        INSERT INTO post_admin (category_id, user_id, role_id, role, status, create_time, update_time)
+        VALUES (#{categoryId}, #{userId}, #{roleId}, #{role}, #{status}, #{createTime}, #{updateTime})
     </insert>
 
     <update id="disable">
@@ -37,5 +58,42 @@
           AND user_id = #{userId}
           AND status = 1
     </update>
+
+    <update id="reactivate">
+        UPDATE post_admin
+        SET status = 1,
+            role = #{role},
+            role_id = #{roleId},
+            update_time = NOW()
+        WHERE category_id = #{categoryId}
+          AND user_id = #{userId}
+          AND status = 0
+    </update>
+
+    <update id="updateRole">
+        UPDATE post_admin
+        SET role = #{role},
+            role_id = #{roleId},
+            update_time = NOW()
+        WHERE category_id = #{categoryId}
+          AND user_id = #{userId}
+          AND status = 1
+    </update>
+
+    <select id="selectCandidateUsers" resultType="java.util.Map">
+        SELECT u.id, u.username, u.nickname, u.avatar
+        FROM `user` u
+        <where>
+            u.status = 1
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    u.username LIKE CONCAT('%', #{keyword}, '%')
+                    OR u.nickname LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY u.id DESC
+        LIMIT #{limit}
+    </select>
 
 </mapper>

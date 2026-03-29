@@ -51,3 +51,9 @@ mybatis:
     map-underscore-to-camel-case: true # 下划线转驼峰（如 create_time → createTime）
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 打印 SQL 日志（调试用）
   type-aliases-package: com.example.apiiungo.entity # 实体类别名包
+
+dm:
+  crypto:
+    # 生产环境请改为高强度随机密钥，并放到安全配置中心
+    key: dev-only-change-me-dm-crypto-key
+    key-version: 1

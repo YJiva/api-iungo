@@ -71,6 +71,53 @@ public class SubController {
         return result;
     }
 
+    @PostMapping("/delete")
+    public Map<String, Object> deleteOne(@RequestParam Long id, HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        Long userId = getUserIdFromRequest(request);
+        if (userId == null) {
+            result.put("code", 401);
+            result.put("msg", "未登录");
+            return result;
+        }
+        boolean ok = subService.deleteById(userId, id);
+        result.put("code", ok ? 200 : 400);
+        result.put("msg", ok ? "删除成功" : "删除失败");
+        return result;
+    }
+
+    @PostMapping("/delete-all")
+    public Map<String, Object> deleteAll(HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        Long userId = getUserIdFromRequest(request);
+        if (userId == null) {
+            result.put("code", 401);
+            result.put("msg", "未登录");
+            return result;
+        }
+        int count = subService.deleteAll(userId);
+        result.put("code", 200);
+        result.put("msg", "删除成功");
+        result.put("count", count);
+        return result;
+    }
+
+    @PostMapping("/delete-read")
+    public Map<String, Object> deleteRead(HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        Long userId = getUserIdFromRequest(request);
+        if (userId == null) {
+            result.put("code", 401);
+            result.put("msg", "未登录");
+            return result;
+        }
+        int count = subService.deleteRead(userId);
+        result.put("code", 200);
+        result.put("msg", "已删除全部已读通知");
+        result.put("count", count);
+        return result;
+    }
+
     private Long getUserIdFromRequest(HttpServletRequest request) {
         String auth = request.getHeader("Authorization");
         if (auth == null) {

@@ -1,7 +1,9 @@
 package com.apiiungo.controller;
 
+import com.apiiungo.entity.Blog;
 import com.apiiungo.entity.Comment;
 import com.apiiungo.entity.User;
+import com.apiiungo.mapper.BlogMapper;
 import com.apiiungo.service.CommentService;
 import com.apiiungo.service.FavoriteService;
 import com.apiiungo.service.LikeService;
@@ -32,6 +34,8 @@ public class BlogInteractController {
     private TargetTypeService targetTypeService;
     @Autowired
     private SubService subService;
+    @Autowired
+    private BlogMapper blogMapper;
 
     @GetMapping("/status")
     public Map<String, Object> status(@RequestParam Long blogId, HttpServletRequest request) {
@@ -84,11 +88,18 @@ public class BlogInteractController {
         }
         boolean liked = likeService.toggleLike(uid, blogTypeId, blogId);
         if (liked) {
-            try {
-                com.apiiungo.entity.Blog blog = new com.apiiungo.entity.Blog();
-                blog.setId(blogId);
-                // 简化：无法直接拿作者时，跳过。后续可注入 BlogService 精确通知。
-            } catch (Exception ignored) {
+            Blog blog = blogMapper.selectById(blogId);
+            if (blog != null && blog.getUserId() != null && !blog.getUserId().equals(uid)) {
+                User actor = userService.findById(uid);
+                String actorName = actor != null && actor.getUsername() != null ? actor.getUsername() : "有人";
+                subService.addNotification(
+                        blog.getUserId(),
+                        actorName + " 点赞了你的博客",
+                        "BLOG_LIKE",
+                        blog.getTitle(),
+                        "博客",
+                        "/blog/detail/" + blogId
+                );
             }
         }
         result.put("code", 200);
@@ -181,6 +192,32 @@ public class BlogInteractController {
         c.setLikeCount(0);
         Comment saved = commentService.addComment(c);
 
+        Blog blog = blogMapper.selectById(blogId);
+        User actor = userService.findById(uid);
+        String actorName = actor != null && actor.getUsername() != null ? actor.getUsername() : "有人";
+        if (parentCommentId != null && parentCommentId > 0) {
+            Comment parent = commentService.getById(parentCommentId);
+            if (parent != null && parent.getUserId() != null && !parent.getUserId().equals(uid) && blog != null) {
+                subService.addNotification(
+                        parent.getUserId(),
+                        actorName + " 回复了你的评论：" + trimContent(content.trim()),
+                        "COMMENT_REPLY",
+                        blog.getTitle(),
+                        "博客",
+                        "/blog/detail/" + blogId
+                );
+            }
+        } else if (blog != null && blog.getUserId() != null && !blog.getUserId().equals(uid)) {
+            subService.addNotification(
+                    blog.getUserId(),
+                    actorName + " 评论了你的博客：" + trimContent(content.trim()),
+                    "BLOG_COMMENT",
+                    blog.getTitle(),
+                    "博客",
+                    "/blog/detail/" + blogId
+            );
+        }
+
         result.put("code", 200);
         result.put("msg", "评论成功");
         result.put("data", saved);
@@ -219,6 +256,31 @@ public class BlogInteractController {
         boolean liked = likeService.toggleLike(uid, commentTypeId, commentId);
         commentService.updateLikeCount(commentId, liked ? 1 : -1);
         Comment latest = commentService.getById(commentId);
+
+        if (liked) {
+            Long notifyUserId = null;
+            if (comment.getTargetType() != null && comment.getTargetType().equals(commentTypeId)) {
+                Comment parent = commentService.getById(comment.getTargetId());
+                if (parent != null) {
+                    notifyUserId = parent.getUserId();
+                }
+            }
+            if (notifyUserId != null && !notifyUserId.equals(uid)) {
+                Blog ownerBlog = resolveBlogByComment(comment);
+                if (ownerBlog != null) {
+                    User actor = userService.findById(uid);
+                    String actorName = actor != null && actor.getUsername() != null ? actor.getUsername() : "有人";
+                    subService.addNotification(
+                            notifyUserId,
+                            actorName + " 赞了你的回复",
+                            "COMMENT_LIKE",
+                            ownerBlog.getTitle(),
+                            "博客",
+                            "/blog/detail/" + ownerBlog.getId()
+                    );
+                }
+            }
+        }
 
         result.put("code", 200);
         result.put("liked", liked);
@@ -308,6 +370,42 @@ public class BlogInteractController {
         likeService.deleteByTarget(commentTypeId, commentId);
         // 删除该评论
         commentService.deleteById(commentId);
+    }
+
+    private Blog resolveBlogByComment(Comment comment) {
+        if (comment == null || comment.getTargetType() == null || comment.getTargetId() == null) {
+            return null;
+        }
+        Long blogTypeId = targetTypeService.getIdByCode("blog");
+        Long commentTypeId = targetTypeService.getIdByCode("comment");
+        if (blogTypeId == null || commentTypeId == null) {
+            return null;
+        }
+        Long type = comment.getTargetType();
+        Long targetId = comment.getTargetId();
+        if (type.equals(blogTypeId)) {
+            return blogMapper.selectById(targetId);
+        }
+        while (type.equals(commentTypeId)) {
+            Comment parent = commentService.getById(targetId);
+            if (parent == null || parent.getTargetType() == null || parent.getTargetId() == null) {
+                return null;
+            }
+            if (parent.getTargetType().equals(blogTypeId)) {
+                return blogMapper.selectById(parent.getTargetId());
+            }
+            type = parent.getTargetType();
+            targetId = parent.getTargetId();
+        }
+        return null;
+    }
+
+    private String trimContent(String content) {
+        if (content == null) {
+            return "";
+        }
+        String text = content.trim();
+        return text.length() > 30 ? text.substring(0, 30) + "..." : text;
     }
 
     private String getUsernameFromRequest(HttpServletRequest request) {

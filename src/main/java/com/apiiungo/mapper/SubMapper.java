@@ -16,5 +16,11 @@ public interface SubMapper {
     int markRead(@Param("id") Long id, @Param("userId") Long userId);
 
     int markAllRead(@Param("userId") Long userId);
+
+    int deleteById(@Param("id") Long id, @Param("userId") Long userId);
+
+    int deleteAll(@Param("userId") Long userId);
+
+    int deleteRead(@Param("userId") Long userId);
 }
 

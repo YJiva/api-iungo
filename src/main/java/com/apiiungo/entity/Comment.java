@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 @TableName("comment")
 public class Comment {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.INPUT)
     private Long id;
     private Long userId;
     private Long targetType;

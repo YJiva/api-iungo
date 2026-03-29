@@ -3,315 +3,348 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>APi-iungo API 文档</title>
+    <title>Iungo API 文档</title>
     <style>
       :root {
-        /* 小清新：淡粉背景 + 深色字体 + 绿色代码块 */
-        --bg: #fff1f5; /* 淡粉 */
-        --card: rgba(255, 255, 255, 0.9);
-        --text: rgba(17, 24, 39, 0.92); /* 深 */
-        --muted: rgba(17, 24, 39, 0.6);
+        --bg: #fff1f5;
+        --card: rgba(255, 255, 255, 0.92);
+        --text: rgba(17, 24, 39, 0.92);
+        --muted: rgba(17, 24, 39, 0.58);
         --border: rgba(17, 24, 39, 0.12);
         --link: #0ea5e9;
-        --code-bg: rgba(34, 197, 94, 0.12); /* 绿色一点 */
+        --code-bg: rgba(34, 197, 94, 0.12);
         --code-border: rgba(34, 197, 94, 0.22);
+        --nav-active: rgba(14, 165, 233, 0.15);
+      }
+      * {
+        box-sizing: border-box;
       }
       html,
       body {
         height: 100%;
+        margin: 0;
       }
       body {
-        margin: 0;
         background: var(--bg);
         color: var(--text);
         font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
           "Liberation Sans", sans-serif;
       }
-      .wrap {
-        max-width: 980px;
-        margin: 0 auto;
-        padding: 28px 18px 64px;
+      .layout {
+        display: flex;
+        min-height: 100%;
+        align-items: flex-start;
+      }
+      .sidebar {
+        width: 260px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        max-height: 100vh;
+        overflow: auto;
+        padding: 16px 12px 48px;
+        border-right: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.55);
+        backdrop-filter: blur(8px);
+      }
+      .sidebar h2 {
+        margin: 0 0 10px;
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .nav {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .nav li {
+        margin: 0;
+      }
+      .nav a {
+        display: block;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid transparent;
+        word-break: break-all;
+      }
+      .nav a:hover {
+        background: rgba(255, 255, 255, 0.8);
+        border-color: var(--border);
+      }
+      .nav a.active {
+        background: var(--nav-active);
+        border-color: rgba(14, 165, 233, 0.25);
+        color: #0369a1;
+        font-weight: 500;
+      }
+      .main {
+        flex: 1;
+        min-width: 0;
+        padding: 20px 24px 64px;
       }
       .topbar {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
         gap: 12px;
+        flex-wrap: wrap;
         padding: 14px 16px;
         border: 1px solid var(--border);
         border-radius: 14px;
-        background: rgba(255, 255, 255, 0.72);
-        backdrop-filter: blur(10px);
-        position: sticky;
-        top: 12px;
-        z-index: 10;
-      }
-      .topbar-title {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
+        background: var(--card);
+        margin-bottom: 16px;
       }
       .topbar-title strong {
-        font-size: 14px;
-        letter-spacing: 0.2px;
+        font-size: 15px;
       }
-      .topbar-title span {
+      .topbar-title .path {
+        display: block;
         font-size: 12px;
         color: var(--muted);
+        margin-top: 4px;
+        word-break: break-all;
       }
       .topbar-actions {
         display: flex;
-        align-items: center;
-        gap: 10px;
+        gap: 8px;
+        flex-wrap: wrap;
       }
       .btn {
         cursor: pointer;
         border: 1px solid var(--border);
-        background: rgba(255, 255, 255, 0.72);
+        background: rgba(255, 255, 255, 0.85);
         color: var(--text);
         border-radius: 10px;
-        padding: 8px 10px;
+        padding: 8px 12px;
         font-size: 12px;
+        text-decoration: none;
+        display: inline-block;
       }
       .btn:hover {
-        background: rgba(255, 255, 255, 0.92);
+        background: #fff;
       }
       .card {
-        margin-top: 16px;
-        padding: 18px 18px;
+        padding: 22px 24px;
         border: 1px solid var(--border);
         border-radius: 14px;
         background: var(--card);
-        backdrop-filter: blur(10px);
+        max-width: 980px;
       }
-      a {
+      .card #content {
+        line-height: 1.65;
+      }
+      .card #content a {
         color: var(--link);
       }
-      pre,
-      code {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      }
-      pre {
+      .card #content pre {
         background: var(--code-bg);
         border: 1px solid var(--code-border);
-        padding: 12px 12px;
+        padding: 12px 14px;
         border-radius: 12px;
         overflow: auto;
+        font-size: 13px;
       }
-      code {
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        padding: 0 6px;
-        border-radius: 8px;
+      .card #content code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 0.9em;
+        background: rgba(17, 24, 39, 0.06);
+        padding: 0.15em 0.4em;
+        border-radius: 6px;
       }
-      pre code {
+      .card #content pre code {
         background: transparent;
-        border: none;
         padding: 0;
       }
-      h1,
-      h2,
-      h3 {
-        margin-top: 18px;
+      .card #content h1 { font-size: 1.65rem; margin-top: 0; }
+      .card #content h2 { font-size: 1.35rem; margin-top: 1.5em; color: var(--text); }
+      .card #content h3 { font-size: 1.12rem; margin-top: 1.25em; color: var(--text); }
+      .card #content table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 13px;
+        margin: 1em 0;
       }
-      h1 {
-        font-size: 22px;
+      .card #content th,
+      .card #content td {
+        border: 1px solid var(--border);
+        padding: 8px 10px;
+        text-align: left;
       }
-      h2 {
-        font-size: 18px;
-      }
-      h3 {
-        font-size: 15px;
-        color: rgba(255, 255, 255, 0.88);
-      }
-      hr {
-        border: none;
-        border-top: 1px solid var(--border);
-        margin: 16px 0;
+      .card #content th {
+        background: rgba(17, 24, 39, 0.04);
       }
       .muted {
         color: var(--muted);
-        font-size: 12px;
       }
       .error {
-        color: #fecaca;
+        color: #b91c1c;
+      }
+      @media (max-width: 880px) {
+        .layout {
+          flex-direction: column;
+        }
+        .sidebar {
+          width: 100%;
+          max-height: none;
+          position: relative;
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+        }
       }
     </style>
   </head>
   <body>
-    <div class="wrap">
-      <div class="topbar">
-        <div class="topbar-title">
-          <strong>APi-iungo API 文档</strong>
-          <span>渲染自 <code>/api.md</code></span>
+    <div class="layout">
+      <aside class="sidebar">
+        <h2>文档</h2>
+        <ul class="nav" id="nav"></ul>
+      </aside>
+      <div class="main">
+        <div class="topbar">
+          <div class="topbar-title">
+            <strong>Iungo API 文档</strong>
+            <span class="path" id="doc-path">加载中…</span>
+          </div>
+          <div class="topbar-actions">
+            <button type="button" class="btn" id="btn-reload">刷新</button>
+            <a class="btn" id="btn-raw" href="#" target="_blank" rel="noreferrer">纯 Markdown</a>
+          </div>
         </div>
-        <div class="topbar-actions">
-          <button class="btn" id="btn-reload">刷新</button>
-          <a class="btn" href="/api.md" target="_blank" rel="noreferrer">查看 Markdown</a>
+        <div class="card">
+          <div id="content" class="muted">加载中…</div>
         </div>
-      </div>
-
-      <div class="card">
-        <div id="content" class="muted">加载中…</div>
       </div>
     </div>
 
     <script src="/marked.min.js"></script>
     <script>
-      // 轻量 Markdown 渲染（离线可用，不依赖外部 CDN）
-      // 支持：标题(#/##/###)、分割线(---)、代码块(```)、无序列表(- )、段落、行内代码(`code`)
-      function escapeHtml(s) {
-        return String(s)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#39;");
-      }
+      (function () {
+        var DOCS = [
+          { path: "/api.md", title: "总索引" },
+          { path: "/docs/api/README.md", title: "分册目录" },
+          { path: "/docs/api/00-约定.md", title: "00 约定" },
+          { path: "/docs/api/01-用户与认证.md", title: "01 用户与认证" },
+          { path: "/docs/api/02-个人中心与互动基础.md", title: "02 个人中心 / 关注 / 私信…" },
+          { path: "/docs/api/03-首页站点与文件.md", title: "03 首页 / 站点 / 上传" },
+          { path: "/docs/api/04-博客.md", title: "04 博客" },
+          { path: "/docs/api/05-博客互动.md", title: "05 博客互动" },
+          { path: "/docs/api/06-帖子.md", title: "06 帖子" },
+          { path: "/docs/api/07-贴吧与禁言.md", title: "07 贴吧与禁言" },
+          { path: "/docs/api/08-管理端.md", title: "08 管理端" },
+        ];
 
-      function renderInline(text) {
-        // 行内代码
-        const escaped = escapeHtml(text);
-        return escaped.replace(/`([^`]+?)`/g, "<code>$1</code>");
-      }
-
-      function renderMarkdown(md) {
-        const lines = String(md).replace(/\r\n/g, "\n").split("\n");
-        let html = "";
-        let inCode = false;
-        let codeLang = "";
-        let codeBuf = [];
-        let inList = false;
-
-        function flushParagraph(buf) {
-          const t = buf.join(" ").trim();
-          if (!t) return "";
-          return "<p>" + renderInline(t) + "</p>\n";
+        function normalizeHash() {
+          var h = (window.location.hash || "").replace(/^#/, "").trim();
+          if (!h) return "/api.md";
+          if (h.charAt(0) !== "/") h = "/" + h;
+          return h.split("?")[0];
         }
 
-        let paraBuf = [];
+        function setActiveNav(path) {
+          var links = document.querySelectorAll(".nav a");
+          links.forEach(function (a) {
+            var p = a.getAttribute("data-path");
+            a.classList.toggle("active", p === path);
+          });
+        }
 
-        function closeList() {
-          if (inList) {
-            html += "</ul>\n";
-            inList = false;
+        function resolveMdHref(href, currentPath) {
+          if (!href) return null;
+          if (href.indexOf("mailto:") === 0) return null;
+          if (href.indexOf("#") === 0 && href.indexOf(".md") === -1) return null;
+          var m = href.match(/^(https?:\/\/[^#]+)?\/api\.html#(\/.*)$/i);
+          if (m) return m[2];
+          if (href.indexOf("http://") === 0 || href.indexOf("https://") === 0) return null;
+          if (href.indexOf("#") === 0) return null;
+          if (href.indexOf("/api.html#") === 0) {
+            return href.replace(/^.*#/, "/");
           }
-        }
-
-        function closePara() {
-          if (paraBuf.length) {
-            html += flushParagraph(paraBuf);
-            paraBuf = [];
+          var baseDir = currentPath.replace(/\/[^/]*$/, "/");
+          if (href.indexOf("/") === 0) return href;
+          var parts = (baseDir + href).split("/");
+          var stack = [];
+          for (var i = 0; i < parts.length; i++) {
+            var p = parts[i];
+            if (!p || p === ".") continue;
+            if (p === "..") stack.pop();
+            else stack.push(p);
           }
+          return "/" + stack.join("/");
         }
 
-        for (const rawLine of lines) {
-          const line = rawLine;
+        function bindContentLinks(currentPath) {
+          var content = document.getElementById("content");
+          content.querySelectorAll("a[href]").forEach(function (a) {
+            var href = a.getAttribute("href");
+            if (!href || /\.(png|jpg|jpeg|gif|webp|svg)(\?|$)/i.test(href)) return;
+            var target = resolveMdHref(href, currentPath);
+            if (!target || target.indexOf(".md") === -1) return;
+            a.addEventListener("click", function (e) {
+              e.preventDefault();
+              window.location.hash = "#" + target;
+            });
+          });
+        }
 
-          // code fence
-          const fence = line.match(/^```(\w+)?\s*$/);
-          if (fence) {
-            if (!inCode) {
-              closePara();
-              closeList();
-              inCode = true;
-              codeLang = fence[1] || "";
-              codeBuf = [];
+        async function loadDoc(path) {
+          var el = document.getElementById("content");
+          var pathEl = document.getElementById("doc-path");
+          var rawBtn = document.getElementById("btn-raw");
+          pathEl.textContent = path;
+          rawBtn.href = path;
+          el.className = "muted";
+          el.textContent = "加载中…";
+          setActiveNav(path);
+          try {
+            var resp = await fetch(path, { cache: "no-store" });
+            if (!resp.ok) throw new Error("HTTP " + resp.status);
+            var md = await resp.text();
+            el.className = "";
+            if (window.marked && typeof window.marked.parse === "function") {
+              if (typeof marked.setOptions === "function") {
+                marked.setOptions({ gfm: true, breaks: false });
+              }
+              el.innerHTML = marked.parse(md);
             } else {
-              const codeText = codeBuf.join("\n");
-              html +=
-                '<pre><code' +
-                (codeLang ? ' class="language-' + escapeHtml(codeLang) + '"' : "") +
-                ">" +
-                escapeHtml(codeText) +
-                "</code></pre>\n";
-              inCode = false;
-              codeLang = "";
-              codeBuf = [];
+              el.textContent = md;
             }
-            continue;
+            bindContentLinks(path);
+          } catch (e) {
+            el.className = "error";
+            el.textContent = "加载失败：" + (e && e.message ? e.message : e);
           }
-
-          if (inCode) {
-            codeBuf.push(line);
-            continue;
-          }
-
-          // hr
-          if (/^\s*---+\s*$/.test(line)) {
-            closePara();
-            closeList();
-            html += "<hr/>\n";
-            continue;
-          }
-
-          // heading
-          const h = line.match(/^(#{1,3})\s+(.*)\s*$/);
-          if (h) {
-            closePara();
-            closeList();
-            const level = h[1].length;
-            html += "<h" + level + ">" + renderInline(h[2]) + "</h" + level + ">\n";
-            continue;
-          }
-
-          // list item
-          const li = line.match(/^\s*-\s+(.*)\s*$/);
-          if (li) {
-            closePara();
-            if (!inList) {
-              html += "<ul>\n";
-              inList = true;
-            }
-            html += "<li>" + renderInline(li[1]) + "</li>\n";
-            continue;
-          } else {
-            closeList();
-          }
-
-          // blank line => paragraph break
-          if (/^\s*$/.test(line)) {
-            closePara();
-            continue;
-          }
-
-          // default paragraph
-          paraBuf.push(line.trim());
         }
 
-        // flush tail
-        if (inCode) {
-          // 未闭合的代码块：按纯文本输出
-          html += "<pre><code>" + escapeHtml(codeBuf.join("\n")) + "</code></pre>\n";
+        function buildNav() {
+          var ul = document.getElementById("nav");
+          ul.innerHTML = "";
+          DOCS.forEach(function (d) {
+            var li = document.createElement("li");
+            var a = document.createElement("a");
+            a.href = "#" + d.path;
+            a.textContent = d.title;
+            a.setAttribute("data-path", d.path);
+            a.addEventListener("click", function () {
+              setActiveNav(d.path);
+            });
+            li.appendChild(a);
+            ul.appendChild(li);
+          });
         }
-        closeList();
-        closePara();
-        return html;
-      }
 
-      async function loadMd() {
-        const el = document.getElementById("content");
-        el.className = "muted";
-        el.textContent = "加载中…";
-        try {
-          const resp = await fetch("/api.md", { cache: "no-store" });
-          if (!resp.ok) throw new Error("HTTP " + resp.status);
-          const md = await resp.text();
-          el.className = "";
-          // 优先使用本地 marked（若未加载成功，则降级使用轻量渲染器）
-          if (window.marked && typeof window.marked.parse === "function") {
-            el.innerHTML = window.marked.parse(md);
-          } else {
-            el.innerHTML = renderMarkdown(md);
-          }
-        } catch (e) {
-          el.className = "error";
-          el.textContent = "加载失败：" + (e && e.message ? e.message : e);
+        function onHashChange() {
+          loadDoc(normalizeHash());
         }
-      }
-      document.getElementById("btn-reload").addEventListener("click", loadMd);
-      loadMd();
+
+        document.getElementById("btn-reload").addEventListener("click", onHashChange);
+        window.addEventListener("hashchange", onHashChange);
+        buildNav();
+        onHashChange();
+      })();
     </script>
   </body>
 </html>
-

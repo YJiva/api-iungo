@@ -24,15 +24,17 @@ public class PostController {
     @Autowired
     private com.apiiungo.service.FavoriteService favoriteService;
     @Autowired
+    private com.apiiungo.service.LikeService likeService;
+    @Autowired
     private com.apiiungo.service.SubService subService;
     @Autowired
     private com.apiiungo.service.TargetTypeService targetTypeService;
     @Autowired
-    private com.apiiungo.service.LikeService likeService;
-    @Autowired
     private com.apiiungo.mapper.PostCategoryMapper postCategoryMapper;
     @Autowired
     private com.apiiungo.mapper.PostAdminMapper postAdminMapper;
+    @Autowired
+    private com.apiiungo.mapper.PostCategoryMuteMapper postCategoryMuteMapper;
 
     // 创建帖子（需登录）
     @PostMapping("/create")
@@ -68,6 +70,12 @@ public class PostController {
             result.put("msg", "吧不存在");
             return result;
         }
+        // 吧内禁言校验：被禁言用户禁止在本吧发帖
+        if (postCategoryMuteMapper.selectActive(post.getCategoryId(), user.getId(), java.time.LocalDateTime.now()) != null) {
+            result.put("code", 403);
+            result.put("msg", "你已被本吧禁言，暂时无法发帖");
+            return result;
+        }
         post.setAuthorId(user.getId());
         Post saved = postService.createPost(post);
         result.put("code", 200);
@@ -79,11 +87,13 @@ public class PostController {
     @GetMapping("/list")
     public Map<String, Object> list(@RequestParam(defaultValue = "0") int offset,
                                     @RequestParam(defaultValue = "10") int limit,
-                                    @RequestParam(required = false) Long categoryId) {
+                                    @RequestParam(required = false) Long categoryId,
+                                    @RequestParam(required = false) String keyword,
+                                    @RequestParam(required = false) Integer essenceOnly) {
         Map<String, Object> result = new HashMap<>();
         List<Post> posts = categoryId == null
                 ? postService.listRecent(offset, limit)
-                : postService.listByCategory(categoryId, offset, limit);
+                : postService.listByCategoryWithFilter(categoryId, offset, limit, keyword, essenceOnly);
         result.put("code", 200);
         result.put("data", posts);
         return result;
@@ -107,11 +117,185 @@ public class PostController {
         return result;
     }
 
-    @PostMapping("/like")
-    public Map<String, Object> like(@RequestParam Long id) {
+    /**
+     * 帖子点赞状态（用于详情页初始化，与 {@link #like} 使用同一套 target_type=post）
+     */
+    @GetMapping("/like/status")
+    public Map<String, Object> likeStatus(@RequestParam Long id, HttpServletRequest request) {
         Map<String, Object> result = new HashMap<>();
-        boolean ok = postService.likePost(id);
+        if (id == null) {
+            result.put("code", 400);
+            result.put("msg", "id 不能为空");
+            return result;
+        }
+        Long postTypeId = targetTypeService.getIdByCode("post");
+        if (postTypeId == null) {
+            result.put("code", 500);
+            result.put("msg", "target 表未配置 post 类型");
+            return result;
+        }
+        Long uid = getUserIdFromAuth(request.getHeader("Authorization"));
+        boolean liked = uid != null && likeService.isLiked(uid, postTypeId, id);
+        int count = likeService.countLikes(postTypeId, id);
+        result.put("code", 200);
+        result.put("liked", liked);
+        result.put("likeCount", count);
+        return result;
+    }
+
+    @PostMapping("/like")
+    public Map<String, Object> like(@RequestParam Long id, HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        Long uid = getUserIdFromAuth(request.getHeader("Authorization"));
+        if (uid == null) {
+            result.put("code", 401);
+            result.put("msg", "未登录");
+            return result;
+        }
+        Long postTypeId = targetTypeService.getIdByCode("post");
+        if (postTypeId == null) {
+            result.put("code", 500);
+            result.put("msg", "target 表未配置 post 类型");
+            return result;
+        }
+        boolean liked = likeService.toggleLike(uid, postTypeId, id);
+        if (liked) {
+            postService.likePost(id);
+        } else {
+            postService.unlikePost(id);
+        }
+        int count = likeService.countLikes(postTypeId, id);
+        if (liked) {
+            Post post = postService.getPost(id);
+            if (post != null && post.getAuthorId() != null && !post.getAuthorId().equals(uid)) {
+                com.apiiungo.entity.User actor = userService.findById(uid);
+                String actorName = actor != null && actor.getUsername() != null ? actor.getUsername() : "有人";
+                String sourceCategory = null;
+                if (post.getCategoryId() != null) {
+                    com.apiiungo.entity.PostCategory c = postCategoryMapper.selectById(post.getCategoryId());
+                    sourceCategory = c == null ? null : c.getName();
+                }
+                subService.addNotification(
+                        post.getAuthorId(),
+                        actorName + " 点赞了你的帖子",
+                        "POST_LIKE",
+                        post.getTitle(),
+                        sourceCategory,
+                        "/post/detail?id=" + post.getId()
+                );
+            }
+        }
+        result.put("code", 200);
+        result.put("liked", liked);
+        result.put("likeCount", count);
+        return result;
+    }
+
+    @PostMapping("/delete")
+    public Map<String, Object> delete(@RequestParam Long id, HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        Long uid = getUserIdFromAuth(request.getHeader("Authorization"));
+        if (uid == null) {
+            result.put("code", 401);
+            result.put("msg", "未登录");
+            return result;
+        }
+        Post post = postService.getPost(id);
+        if (post == null) {
+            result.put("code", 404);
+            result.put("msg", "帖子不存在");
+            return result;
+        }
+        com.apiiungo.entity.User user = userService.findById(uid);
+        boolean isAdmin = user != null && user.getRoleId() != null && user.getRoleId() == 2L;
+        boolean isBarAdmin = post.getCategoryId() != null && postAdminMapper.existsActive(post.getCategoryId(), uid) > 0;
+        if (!isAdmin && !isBarAdmin && (post.getAuthorId() == null || !post.getAuthorId().equals(uid))) {
+            result.put("code", 403);
+            result.put("msg", "无权限");
+            return result;
+        }
+        boolean ok = postService.deletePost(id);
         result.put("code", ok ? 200 : 400);
+        result.put("msg", ok ? "删除成功" : "删除失败");
+        return result;
+    }
+
+    @PostMapping("/admin/delete")
+    public Map<String, Object> adminDelete(@RequestParam Long id, HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        Long uid = getUserIdFromAuth(request.getHeader("Authorization"));
+        if (uid == null) {
+            result.put("code", 401);
+            result.put("msg", "未登录");
+            return result;
+        }
+        com.apiiungo.entity.User user = userService.findById(uid);
+        if (user == null || user.getRoleId() == null || user.getRoleId() != 2L) {
+            result.put("code", 403);
+            result.put("msg", "仅管理员可操作");
+            return result;
+        }
+        boolean ok = postService.deletePost(id);
+        result.put("code", ok ? 200 : 400);
+        result.put("msg", ok ? "删除成功" : "删除失败");
+        return result;
+    }
+
+    @PostMapping("/admin/top/toggle")
+    public Map<String, Object> adminToggleTop(@RequestParam Long id, HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        Long uid = getUserIdFromAuth(request.getHeader("Authorization"));
+        if (uid == null) {
+            result.put("code", 401);
+            result.put("msg", "未登录");
+            return result;
+        }
+        Post post = postService.getPost(id);
+        if (post == null) {
+            result.put("code", 404);
+            result.put("msg", "帖子不存在");
+            return result;
+        }
+        com.apiiungo.entity.User user = userService.findById(uid);
+        boolean isAdmin = user != null && user.getRoleId() != null && user.getRoleId() == 2L;
+        boolean isBarAdmin = post.getCategoryId() != null && postAdminMapper.existsActive(post.getCategoryId(), uid) > 0;
+        if (!isAdmin && !isBarAdmin) {
+            result.put("code", 403);
+            result.put("msg", "无权限");
+            return result;
+        }
+        boolean ok = postService.toggleTop(id);
+        result.put("code", ok ? 200 : 400);
+        result.put("msg", ok ? "操作成功" : "操作失败");
+        return result;
+    }
+
+    @PostMapping("/admin/essence/toggle")
+    public Map<String, Object> adminToggleEssence(@RequestParam Long id, HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        Long uid = getUserIdFromAuth(request.getHeader("Authorization"));
+        if (uid == null) {
+            result.put("code", 401);
+            result.put("msg", "未登录");
+            return result;
+        }
+        Post post = postService.getPost(id);
+        if (post == null) {
+            result.put("code", 404);
+            result.put("msg", "帖子不存在");
+            return result;
+        }
+        com.apiiungo.entity.User user = userService.findById(uid);
+        boolean isAdmin = user != null && user.getRoleId() != null && user.getRoleId() == 2L;
+        boolean isBarAdmin = post.getCategoryId() != null && postAdminMapper.existsActive(post.getCategoryId(), uid) > 0;
+        if (!isAdmin && !isBarAdmin) {
+            result.put("code", 403);
+            result.put("msg", "无权限");
+            return result;
+        }
+        boolean ok = postService.toggleEssence(id);
+        result.put("code", ok ? 200 : 400);
+        result.put("msg", ok ? "操作成功" : "操作失败");
         return result;
     }
 
@@ -160,6 +344,16 @@ public class PostController {
             return result;
         }
 
+        // 吧内禁言校验：被禁言用户禁止在本吧发言（评论也算）
+        Post post = postService.getPost(postId);
+        if (post != null && post.getCategoryId() != null) {
+            if (postCategoryMuteMapper.selectActive(post.getCategoryId(), uid, java.time.LocalDateTime.now()) != null) {
+                result.put("code", 403);
+                result.put("msg", "你已被本吧禁言，暂时无法发言");
+                return result;
+            }
+        }
+
         Long postTypeId = targetTypeService.getIdByCode("post");
         Long commentTypeId = targetTypeService.getIdByCode("comment");
         if (postTypeId == null || commentTypeId == null) {
@@ -190,10 +384,23 @@ public class PostController {
         comment.setContent(content.trim());
         commentService.addComment(comment);
 
-        Post post = postService.getPost(postId);
-        if (post != null && post.getAuthorId() != null && !post.getAuthorId().equals(uid)) {
-            String msg = "你的帖子《" + (post.getTitle() == null ? "" : post.getTitle()) + "》收到了新评论";
-            subService.addNotification(post.getAuthorId(), msg);
+        com.apiiungo.entity.User actor = userService.findById(uid);
+        String actorName = actor != null && actor.getUsername() != null ? actor.getUsername() : "有人";
+        String sourceCategory = null;
+        if (post != null && post.getCategoryId() != null) {
+            com.apiiungo.entity.PostCategory c = postCategoryMapper.selectById(post.getCategoryId());
+            sourceCategory = c == null ? null : c.getName();
+        }
+
+        if (parentCommentId != null) {
+            com.apiiungo.entity.Comment parent = commentService.getById(parentCommentId);
+            if (parent != null && parent.getUserId() != null && !parent.getUserId().equals(uid) && post != null) {
+                String msg = actorName + " 回复了你的评论：" + trimContent(content.trim());
+                subService.addNotification(parent.getUserId(), msg, "POST_REPLY", post.getTitle(), sourceCategory, "/post/detail?id=" + post.getId());
+            }
+        } else if (post != null && post.getAuthorId() != null && !post.getAuthorId().equals(uid)) {
+            String msg = actorName + " 评论了你的帖子：" + trimContent(content.trim());
+            subService.addNotification(post.getAuthorId(), msg, "POST_REPLY", post.getTitle(), sourceCategory, "/post/detail?id=" + post.getId());
         }
         result.put("code", 200);
         result.put("data", comment);
@@ -265,8 +472,50 @@ public class PostController {
             result.put("msg", "target 表未配置 comment 类型");
             return result;
         }
+        com.apiiungo.entity.Comment comment = commentService.getById(commentId);
+        if (comment == null) {
+            result.put("code", 404);
+            result.put("msg", "评论不存在");
+            return result;
+        }
+
         boolean liked = likeService.toggleLike(uid, commentTypeId, commentId);
         int likeCount = likeService.countLikes(commentTypeId, commentId);
+
+        if (liked) {
+            Long notifyUserId = null;
+            // 点赞楼中楼：通知被回复的人（父评论作者）
+            if (comment.getTargetType() != null && comment.getTargetType().equals(commentTypeId)) {
+                com.apiiungo.entity.Comment parent = commentService.getById(comment.getTargetId());
+                if (parent != null) {
+                    notifyUserId = parent.getUserId();
+                }
+            } else {
+                // 点赞一层楼：通知该楼作者
+                notifyUserId = comment.getUserId();
+            }
+            if (notifyUserId != null && !notifyUserId.equals(uid)) {
+                Post post = resolvePostByComment(comment);
+                if (post != null) {
+                    com.apiiungo.entity.User actor = userService.findById(uid);
+                    String actorName = actor != null && actor.getUsername() != null ? actor.getUsername() : "有人";
+                    String sourceCategory = null;
+                    if (post.getCategoryId() != null) {
+                        com.apiiungo.entity.PostCategory c = postCategoryMapper.selectById(post.getCategoryId());
+                        sourceCategory = c == null ? null : c.getName();
+                    }
+                    subService.addNotification(
+                            notifyUserId,
+                            actorName + " 赞了你的回复",
+                            "POST_COMMENT_LIKE",
+                            post.getTitle(),
+                            sourceCategory,
+                            "/post/detail?id=" + post.getId()
+                    );
+                }
+            }
+        }
+
         result.put("code", 200);
         result.put("liked", liked);
         result.put("likeCount", likeCount);
@@ -308,6 +557,42 @@ public class PostController {
         }
         likeService.deleteByTarget(commentTypeId, commentId);
         commentService.deleteById(commentId);
+    }
+
+    private Post resolvePostByComment(com.apiiungo.entity.Comment comment) {
+        if (comment == null || comment.getTargetType() == null || comment.getTargetId() == null) {
+            return null;
+        }
+        Long postTypeId = targetTypeService.getIdByCode("post");
+        Long commentTypeId = targetTypeService.getIdByCode("comment");
+        if (postTypeId == null || commentTypeId == null) {
+            return null;
+        }
+        Long type = comment.getTargetType();
+        Long targetId = comment.getTargetId();
+        if (type.equals(postTypeId)) {
+            return postService.getPost(targetId);
+        }
+        while (type.equals(commentTypeId)) {
+            com.apiiungo.entity.Comment parent = commentService.getById(targetId);
+            if (parent == null || parent.getTargetType() == null || parent.getTargetId() == null) {
+                return null;
+            }
+            if (parent.getTargetType().equals(postTypeId)) {
+                return postService.getPost(parent.getTargetId());
+            }
+            type = parent.getTargetType();
+            targetId = parent.getTargetId();
+        }
+        return null;
+    }
+
+    private String trimContent(String content) {
+        if (content == null) {
+            return "";
+        }
+        String text = content.trim();
+        return text.length() > 30 ? text.substring(0, 30) + "..." : text;
     }
 
     private Long getUserIdFromAuth(String auth) {

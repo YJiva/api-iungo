@@ -9,11 +9,15 @@ import java.time.LocalDateTime;
 @TableName("sub")
 public class Sub {
 
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.INPUT)
     private Long id;
     private Long userId;
     private String message;
+    private String type;
+    private String sourceTitle;
+    private String sourceCategory;
     private Integer read;
+    private String jumpUrl;
     private LocalDateTime createTime;
 
     public Long getId() {
@@ -40,12 +44,44 @@ public class Sub {
         this.message = message;
     }
 
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getSourceTitle() {
+        return sourceTitle;
+    }
+
+    public void setSourceTitle(String sourceTitle) {
+        this.sourceTitle = sourceTitle;
+    }
+
+    public String getSourceCategory() {
+        return sourceCategory;
+    }
+
+    public void setSourceCategory(String sourceCategory) {
+        this.sourceCategory = sourceCategory;
+    }
+
     public Integer getRead() {
         return read;
     }
 
     public void setRead(Integer read) {
         this.read = read;
+    }
+
+    public String getJumpUrl() {
+        return jumpUrl;
+    }
+
+    public void setJumpUrl(String jumpUrl) {
+        this.jumpUrl = jumpUrl;
     }
 
     public LocalDateTime getCreateTime() {

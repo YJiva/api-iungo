@@ -6,6 +6,7 @@ import com.apiiungo.entity.User;
 import com.apiiungo.mapper.BlogMapper;
 import com.apiiungo.mapper.BlogTypeMapper;
 import com.apiiungo.service.UserService;
+import com.apiiungo.util.TimestampId;
 import com.apiiungo.utils.Md5Util;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -128,7 +129,8 @@ public class AdminBlogController {
         Object topObj = body.get("top");
         blog.setTop(topObj == null ? 0 : Integer.valueOf(topObj.toString()));
         Object scopeObj = body.get("openScope");
-        blog.setOpenScope(scopeObj == null ? 2 : Integer.valueOf(scopeObj.toString()));
+        // 0 草稿；1 仅自己；2 仅粉丝；3 仅互关；4 全部可见（与前台一致）
+        blog.setOpenScope(scopeObj == null ? 4 : Integer.valueOf(scopeObj.toString()));
 
         // 处理标签名 -> blog_type，同步并生成 tags 中的 id 列表
         List<?> tagNameList = (List<?>) body.get("tagNames");
@@ -153,7 +155,7 @@ public class AdminBlogController {
 
         int n;
         if (blog.getId() == null) {
-            blog.setId(System.currentTimeMillis());
+            blog.setId(TimestampId.next());
         }
 
         // 如果该ID不存在，走 insert；存在则 update
@@ -167,6 +169,10 @@ public class AdminBlogController {
             n = blogMapper.insertBlog(blog);
         } else {
             blog.setUpdateTime(now);
+            // 后台编辑未传 read 时保留原阅读数，避免 update 把 read 置空
+            if (blog.getRead() == null && exists.getRead() != null) {
+                blog.setRead(exists.getRead());
+            }
             n = blogMapper.updateBlog(blog);
         }
 

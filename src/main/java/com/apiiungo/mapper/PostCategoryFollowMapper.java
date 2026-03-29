@@ -6,6 +6,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
 @Mapper
 public interface PostCategoryFollowMapper {
 
@@ -20,4 +22,7 @@ public interface PostCategoryFollowMapper {
 
     @Select("SELECT COUNT(1) FROM post_category_follow WHERE category_id = #{categoryId}")
     int countByCategory(@Param("categoryId") Long categoryId);
+
+    /** 当前用户关注的贴吧 id，按关注时间倒序 */
+    List<Long> selectCategoryIdsByUser(@Param("userId") Long userId);
 }
